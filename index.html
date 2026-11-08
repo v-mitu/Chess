@@ -1,0 +1,2459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chess</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><style>text { fill: %230f172a; } @media (prefers-color-scheme: dark) { text { fill: %23f8fafc; } }</style><text y='0.9em' font-size='90'>♔</text></svg>">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: manipulation;
+    }
+
+    /* 駒の基本カラー */
+    .white-piece, .black-piece {
+      font-weight: bold;
+      font-variant-emoji: text;
+    }
+    .white-piece {
+      color: #0f172a;
+    }
+    .black-piece {
+      color: #0f172a;
+      font-weight: normal;
+    }
+
+    /* 盤面拡大モード時の黒駒180度反転 */
+    .rotate-180-fixed {
+      transform: rotate(180deg);
+      display: inline-block;
+    }
+
+    /* マス目の配色（ライトモード） */
+    .square-light {
+      background-color: #f8fafc;
+    }
+    .square-dark {
+      background-color: #cbd5e1;
+    }
+    .square-selected {
+      background-color: #cbd5e1 !important;
+      box-shadow: inset 0 0 0 3px #64748b;
+    }
+    .square-last-move {
+      background-color: #fde047;
+    }
+
+    /* 座標用ラベルのカラー（ライト/ダークモード自動連動） */
+    .square-light .coord-label { color: #64748b; }
+    .square-dark .coord-label { color: #475569; }
+
+    body.dark-mode .square-light .coord-label { color: #cbd5e1; }
+    body.dark-mode .square-dark .coord-label { color: #94a3b8; }
+
+    /* ダークモード配色 */
+    body.dark-mode {
+      background-color: #0f172a;
+      color: #f8fafc;
+    }
+    body.dark-mode .white-piece {
+      color: #f8fafc;
+    }
+    body.dark-mode .black-piece {
+      color: #94a3b8;
+    }
+    body.dark-mode .square-light {
+      background-color: #334155;
+    }
+    body.dark-mode .square-dark {
+      background-color: #1e293b;
+    }
+    body.dark-mode .square-selected {
+      background-color: #475569 !important;
+      box-shadow: inset 0 0 0 3px #94a3b8;
+    }
+    body.dark-mode .square-last-move {
+      background-color: #382b02;
+    }
+    body.dark-mode #main-header,
+    body.dark-mode #status-bar,
+    body.dark-mode .bg-white {
+      background-color: #1e293b !important;
+      color: #f8fafc !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode #board-outer {
+      background-color: #0f172a !important;
+      border-color: #334155 !important;
+    }
+    body.dark-mode .text-slate-800,
+    body.dark-mode .text-slate-700,
+    body.dark-mode .text-slate-900 {
+      color: #f8fafc !important;
+    }
+    body.dark-mode .text-slate-600,
+    body.dark-mode .text-slate-500 {
+      color: #cbd5e1 !important;
+    }
+    body.dark-mode .bg-slate-50,
+    body.dark-mode .bg-slate-100 {
+      background-color: #0f172a !important;
+    }
+    body.dark-mode .hover\:bg-slate-50:hover,
+    body.dark-mode .hover\:bg-slate-100:hover,
+    body.dark-mode .hover\:bg-slate-200:hover {
+      background-color: #334155 !important;
+    }
+
+    /* 手番インジケーターの強制カラー設定 */
+  #turn-indicator.turn-white {
+    background-color: #ffffff !important;
+    border-color: #64748b !important;
+  }
+  #turn-indicator.turn-black {
+    background-color: #0f172a !important;
+    border-color: #0f172a !important;
+  }
+  body.dark-mode #turn-indicator.turn-white {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+  }
+  body.dark-mode #turn-indicator.turn-black {
+    background-color: #94a3b8 !important;
+    border-color: #e2e8f0 !important;
+  }
+
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    body.dark-mode ::-webkit-scrollbar-thumb {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased transition-colors duration-200">
+
+  <!-- ヘッダー -->
+  <header id="main-header" class="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-sm z-10 flex-wrap gap-2">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">♔</span>
+      <h1 class="text-xl font-bold tracking-tight text-slate-800">Chess</h1>
+    </div>
+    
+    <div class="flex items-center gap-2 flex-wrap">
+      <button onclick="toggleTheme()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i id="theme-btn-icon" class="fa-solid fa-moon text-xs"></i>
+        <span id="theme-btn-text">ダーク</span>
+      </button>
+
+      <button onclick="openTimerModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-stopwatch text-xs"></i>
+        <span>タイマー</span>
+      </button>
+
+      <button onclick="openDataModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-database text-xs"></i>
+        <span>データ</span>
+      </button>
+
+      <button onclick="openRuleModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-circle-info text-xs"></i>
+        <span>ルール</span>
+      </button>
+      
+      <!-- 座標表示切り替えボタン（新規追加） -->
+      <button onclick="toggleCoordinates()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-hashtag"></i>
+        <span id="coord-btn-text">座標: ON</span>
+      </button>
+
+      <button onclick="toggleFullscreen()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-expand text-xs"></i>
+        <span id="fullscreen-btn-text">全画面</span>
+      </button>
+
+      <button onclick="resetGamePrompt()" class="px-3 py-1.5 text-sm font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-rotate-left text-xs"></i>
+        <span>リセット</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- メインコンテンツ領域 -->
+  <main id="main-content" class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    
+    <!-- 左側：盤面セクション -->
+    <section id="board-section" class="lg:col-span-2 flex flex-col items-center justify-center w-full">
+      
+      <!-- ステータス ＆ タイマー表示バー（通常モード） -->
+      <div id="status-bar" class="w-full max-w-[560px] mb-3 flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span id="turn-indicator" class="w-3.5 h-3.5 rounded-full inline-block border border-slate-400 bg-white"></span>
+            <span id="game-status-text" class="text-base font-bold text-slate-800">白の手番です</span>
+            <span id="check-badge" class="hidden ml-2 px-2 py-0.5 bg-rose-500 text-white text-xs font-semibold rounded-full animate-pulse">CHECK</span>
+          </div>
+          
+          <div class="flex items-center gap-2">
+            <button id="enter-focus-btn" onclick="toggleBoardFocusMode()" class="px-2.5 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition flex items-center gap-1">
+              <i class="fa-solid fa-up-right-and-down-left-from-center text-[10px]"></i>
+              <span>盤面拡大</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="timer-display-bar" class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 text-sm font-semibold">
+          <div id="black-timer-box" class="flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 transition-all duration-200">
+            <span class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-solid fa-user-ninja"></i> 黒</span>
+            <span id="timer-black-text" class="font-mono text-base font-bold text-slate-800">05:00</span>
+          </div>
+
+          <button id="timer-toggle-btn" onclick="toggleTimerPause()" class="px-2.5 py-1.5 text-xs font-medium bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition" title="タイマー一時停止/再開">
+            <i id="timer-toggle-icon" class="fa-solid fa-pause"></i>
+          </button>
+
+          <div id="white-timer-box" class="flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 transition-all duration-200">
+            <span class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-regular fa-user"></i> 白</span>
+            <span id="timer-white-text" class="font-mono text-base font-bold text-slate-800">05:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 拡大モード用レイアウト容器（盤面＋上下の各プレイヤータイマー） -->
+      <div id="focus-layout-container" class="w-full flex flex-col items-center justify-center gap-2 max-w-[560px]">
+        
+        <!-- 上部：黒プレイヤータイマー（拡大時表示） -->
+        <div id="focus-black-bar" class="hidden w-full flex items-center justify-between px-4 py-2 bg-slate-800 text-white rounded-xl border border-slate-700 shadow-md">
+          <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5 rotate-180-fixed"><i class="fa-solid fa-user-ninja"></i> 黒プレイヤー</span>
+          <span id="focus-timer-black" class="font-mono text-base font-bold text-ghostwhite-400 rotate-180-fixed">05:00</span>
+        </div>
+
+        <!-- チェス盤 ＆ 横のマテリアルバーを収めるコンテナ -->
+        <div class="flex items-center gap-2.5 w-full max-w-[560px] justify-center">
+          
+          <!-- ▼ マテリアルアドバンテージ・縦バー -->
+          <div id="material-bar-container" class="hidden sm:flex flex-col justify-between items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-1.5 h-[560px] max-h-[calc(94vw-2rem)] w-10 shadow-sm shrink-0">
+            <!-- 黒側のポイント差 -->
+            <div class="flex flex-col items-center gap-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+              <span class="font-bold"><i class="fa-solid fa-user-ninja"></i></span>
+              <span id="material-black-diff" class="font-mono font-bold text-slate-800 dark:text-white">0</span>
+            </div>
+            
+            <!-- 中央のバランスバー（白の優勢割合を高さで表現） -->
+            <div class="relative w-2.5 flex-1 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden my-2 flex flex-col justify-end">
+              <div id="material-fill-white" class="w-full bg-slate-100 dark:bg-slate-200 transition-all duration-300" style="height: 50%;"></div>
+            </div>
+
+            <!-- 白側のポイント差 -->
+            <div class="flex flex-col items-center gap-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+              <span id="material-white-diff" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">0</span>
+              <span class="font-bold"><i class="fa-regular fa-user"></i></span>
+            </div>
+          </div>
+
+          <!-- チェス盤外枠 -->
+          <div id="board-outer" class="relative w-full max-w-[560px] aspect-square bg-slate-300 p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center shrink-0">
+            <div id="board-container" class="w-full h-full grid grid-cols-8 grid-rows-8 rounded-lg overflow-hidden relative"></div>
+          </div>
+
+        </div>
+
+        <!-- 下部：白プレイヤータイマー ＆ 拡大解除ボタン（拡大時表示） -->
+        <div id="focus-white-bar" class="hidden w-full flex items-center justify-between px-4 py-2 bg-white text-slate-800 rounded-xl border border-slate-200 shadow-md">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fa-regular fa-user"></i> 白プレイヤー</span>
+            <span id="focus-timer-white" class="font-mono text-base font-bold text-ghostwhite-600">05:00</span>
+          </div>
+          <button id="exit-focus-btn" onclick="toggleBoardFocusMode()" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1 border border-slate-200 shadow-sm">
+            <i class="fa-solid fa-down-left-and-up-right-to-center text-xs"></i>
+            <span>拡大解除</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 盤面下部コントロール -->
+      <div id="board-controls" class="w-full max-w-[560px] mt-3 flex items-center justify-between gap-2">
+        <button id="flip-board-btn" onclick="toggleBoardFlip()" class="px-3 py-2 text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 shadow-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-repeat text-xs"></i>
+          <span>視点反転</span>
+        </button>
+
+        <button onclick="undoMove()" class="px-4 py-2 text-sm font-medium bg-white hover:bg-slate-50 text-slate-700 rounded-xl border border-slate-200 shadow-sm transition flex items-center gap-1.5">
+          <i class="fa-solid fa-rotate-left text-xs"></i>
+          <span>戻る</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 右側：棋譜パネル ＆ リプレイコントローラー -->
+    <section id="sidebar-section" class="w-full flex flex-col gap-4">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col h-[520px]">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+            <i class="fa-solid fa-list-ol text-slate-500"></i>
+            <span>対局棋譜</span>
+          </h2>
+          <span id="replay-status-text" class="text-xs font-medium text-slate-400">対局中：終局後にリプレイ機能が解放されます</span>
+        </div>
+
+        <div id="move-history-container" class="flex-1 overflow-y-auto my-3 pr-1">
+          <table class="w-full text-left text-sm border-collapse">
+            <thead>
+              <tr class="text-slate-400 text-xs border-b border-slate-100">
+                <th class="py-1 px-2 w-12 font-normal">#</th>
+                <th class="py-1 px-2 font-normal">白 (White)</th>
+                <th class="py-1 px-2 font-normal">黒 (Black)</th>
+              </tr>
+            </thead>
+            <tbody id="move-history-table"></tbody>
+          </table>
+        </div>
+
+        <div id="replay-panel" class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+          <div class="flex items-center gap-2">
+            <input type="range" id="replay-slider" min="0" max="0" value="0" disabled oninput="jumpToReplayIndex(parseInt(this.value))" class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer opacity-50 cursor-not-allowed">
+          </div>
+
+          <div id="replay-buttons" class="flex items-center justify-center gap-2 opacity-50 pointer-events-none">
+            <button onclick="jumpToReplayIndex(-1)" class="p-2 w-9 h-9 text-slate-600 hover:bg-slate-100 rounded-lg flex items-center justify-center text-xs">
+              <i class="fa-solid fa-backward-step"></i>
+            </button>
+            <button onclick="stepReplay(-1)" class="p-2 w-9 h-9 text-slate-600 hover:bg-slate-100 rounded-lg flex items-center justify-center text-xs">
+              <i class="fa-solid fa-caret-left"></i>
+            </button>
+            <button id="replay-play-btn" onclick="toggleReplayAuto()" class="p-2 w-9 h-9 bg-slate-900 text-white rounded-lg flex items-center justify-center text-xs">
+              <i class="fa-solid fa-play"></i>
+            </button>
+            <button onclick="stepReplay(1)" class="p-2 w-9 h-9 text-slate-600 hover:bg-slate-100 rounded-lg flex items-center justify-center text-xs">
+              <i class="fa-solid fa-caret-right"></i>
+            </button>
+            <button onclick="jumpToReplayIndex(moveHistory.length - 1)" class="p-2 w-9 h-9 text-slate-600 hover:bg-slate-100 rounded-lg flex items-center justify-center text-xs">
+              <i class="fa-solid fa-forward-step"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ▼ 対局棋譜ウィジェットの下に追加するスコアボード -->
+      <div id="scoreboard-widget" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-trophy text-amber-500"></i>
+            <span>対戦スコアボード</span>
+          </h3>
+          <button onclick="openNameModal()" class="px-2 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition flex items-center gap-1">
+            <i class="fa-solid fa-user-pen text-[10px]"></i>
+            <span>名前変更</span>
+          </button>
+          <button onclick="resetScoreboard()" class="px-2 py-1 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-md transition flex items-center gap-1">
+        <i class="fa-solid fa-rotate-left text-[10px]"></i>
+        <span>スコアリセット</span>
+      </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-100">
+            <div id="sb-white-name" class="text-[11px] font-medium text-slate-500 truncate">白プレイヤー</div>
+            <div id="score-white" class="text-xl font-extrabold text-indigo-600 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-center">
+            <div class="text-[10px] font-medium text-slate-400">引き分け</div>
+            <div id="score-draw" class="text-lg font-bold text-slate-600 mt-0.5">0</div>
+          </div>
+          <div class="p-2 bg-slate-50 rounded-xl border border-slate-100">
+            <div id="sb-black-name" class="text-[11px] font-medium text-slate-500 truncate">黒プレイヤー</div>
+            <div id="score-black" class="text-xl font-extrabold text-slate-800 mt-0.5">0</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- モーダル群 -->
+
+  <!-- タイマー設定モーダル -->
+  <div id="timer-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full text-center shadow-xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-stopwatch text-indigo-500"></i>
+          <span>チェスタイマー設定</span>
+        </h3>
+        <button onclick="closeTimerModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">持ち時間を選択してください（ゲームリセットされます）</p>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="setTimerPreset(180)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">3分 (ブレット)</button>
+        <button onclick="setTimerPreset(600)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">10分 (ブリッツ)</button>
+        <button onclick="setTimerPreset(1800)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">30分 (ラピッド)</button>
+        <button onclick="setTimerPreset(3600)" class="py-2.5 px-8 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">60分 (スタンダード)</button>
+        <button onclick="setTimerPreset(5400)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">90分 (クラシカル)</button>
+        <button onclick="setTimerPreset(0)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">タイマー無効</button>
+      
+        <button onclick="setTimerPreset(300, 3, 'fisher')" class="py-2 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-xs transition border border-slate-200">5分 + 3秒 (フィッシャー)</button>
+        <button onclick="setTimerPreset(300, 5, 'delay')" class="py-2 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-xs transition border border-slate-200">5分 / 5秒ディレイ</button>
+      </div>
+
+      <button onclick="closeTimerModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition">
+        キャンセル
+      </button>
+    </div>
+  </div>
+
+  <!-- ゲームセット特大表示モーダル -->
+  <div id="gameover-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full text-center shadow-2xl border border-slate-100 flex flex-col items-center gap-5 transform transition-all scale-100">
+      <div class="w-20 h-20 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-4xl shadow-inner">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <div>
+        <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">GAME SET</h2>
+        <p id="gameover-reason-text" class="text-slate-600 font-medium text-base mt-2">チェックメイト！ 白の勝利です</p>
+      </div>
+      <div class="flex items-center gap-3 w-full mt-2">
+        <button onclick="hideGameOverModal()" class="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl transition text-sm">
+          盤面を確認
+        </button>
+        <button onclick="hideGameOverModal(); resetGame();" class="flex-1 py-3 px-4 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition text-sm shadow-md">
+          もう一度遊ぶ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ポーン昇格選択モーダル -->
+  <div id="promotion-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full text-center shadow-xl border border-slate-100">
+      <h3 class="text-lg font-bold text-slate-800 mb-4">プロモーション（駒の昇格）</h3>
+      <div id="promotion-options" class="grid grid-cols-2 gap-3"></div>
+    </div>
+  </div>
+
+  <!-- リセット確認モーダル -->
+  <div id="reset-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full text-center shadow-xl border border-slate-100 flex flex-col items-center gap-4">
+      <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center text-xl">
+        <i class="fa-solid fa-rotate-left"></i>
+      </div>
+      <h3 class="text-lg font-bold text-slate-800">盤面をリセットしますか？</h3>
+      <p class="text-xs text-slate-500">現在の対局データは削除されます。</p>
+      <div class="flex items-center gap-2 w-full mt-1">
+        <button onclick="closeResetModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition">
+          キャンセル
+        </button>
+        <button onclick="confirmResetGame()" class="flex-1 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-medium rounded-xl text-sm transition shadow-sm">
+          リセット
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- カスタム通知アラートモーダル -->
+  <div id="info-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[70] flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-xs w-full text-center shadow-xl border border-slate-100 flex flex-col items-center gap-4">
+      <div class="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-xl">
+        <i class="fa-solid fa-circle-info"></i>
+      </div>
+      <p id="info-modal-text" class="text-sm font-medium text-slate-700 leading-relaxed">メッセージ</p>
+      <button onclick="closeInfoModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-sm transition shadow-sm">
+        OK
+      </button>
+    </div>
+  </div>
+
+  <!-- 対局データ（PGN セーブ＆ロード）モーダル -->
+  <div id="data-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-file-code text-slate-500"></i>
+          <span>PGNデータ セーブ＆ロード</span>
+        </h3>
+        <button onclick="closeDataModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-500">標準的なPGN (Portable Game Notation) 形式のテキストデータです。</p>
+      <textarea id="data-textarea" class="w-full h-44 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="ここにPGNテキストを貼り付け"></textarea>
+      <div class="flex items-center gap-2">
+        <button onclick="copyGameData()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-copy text-xs"></i>
+          <span>コピー</span>
+        </button>
+        <button onclick="loadGameData()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-file-import text-xs"></i>
+          <span>PGNロード</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ルール解説モーダル -->
+  <div id="rule-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-book-open text-slate-500"></i>
+          <span>ルールと操作説明</span>
+        </h3>
+        <button onclick="closeRuleModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      
+      <div class="space-y-3 text-xs text-slate-600 leading-relaxed">
+        <button onclick="openPieceRulesModal()" class="w-full py-2.5 px-3 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl text-xs transition flex items-center justify-center gap-2 border border-indigo-200">
+          <span class="text-base">♞</span>
+          <span>駒の動かし方一覧を詳しく見る</span>
+          <i class="fa-solid fa-chevron-right text-[10px]"></i>
+        </button>
+
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm mb-1">【基本操作】</h4>
+          <p>自分の手番の駒をタップすると、移動可能なマスが半透明グレーの円で表示されます。移動先をタップすると駒が滑らかに移動します。</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm mb-1">【チェスタイマー】</h4>
+          <p>ヘッダーの「タイマー」ボタンから持ち時間を設定できます。指し手を完了するたびに自動で相手のタイマーがカウントダウンを開始します。</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm mb-1">【盤面拡大モード】</h4>
+          <p>「盤面拡大」ボタンを押すと画面全体にチェス盤が表示され、盤面の上下に各プレイヤーのタイマーが表示されます。</p>
+        </div>
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm mb-1">【引き分けルール対応】</h4>
+          <p>ステイルメイト、50手ルール、スリーフォールド・レピティション（同一局面3回出現）、デッド・ポジション（チェックメイト不可能な駒数）を完全自動判定します。</p>
+        </div>
+      </div>
+
+      <button onclick="closeRuleModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-sm transition shadow-sm mt-2">
+        閉じる
+      </button>
+    </div>
+  </div>
+
+  <!-- プレイヤー名変更モーダル -->
+  <div id="name-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-user-pen text-indigo-500"></i>
+          <span>プレイヤー名の設定</span>
+        </h3>
+        <button onclick="closeNameModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3 text-left">
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">白プレイヤー名</label>
+          <input type="text" id="input-white-name" class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value="白プレイヤー">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-600 mb-1 block">黒プレイヤー名</label>
+          <input type="text" id="input-black-name" class="w-full px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" value="黒プレイヤー">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 mt-2">
+        <button onclick="closeNameModal()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition">
+          キャンセル
+        </button>
+        <button onclick="savePlayerNames()" class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition shadow-sm">
+          保存
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 駒の動き詳細解説モーダル -->
+  <div id="piece-rules-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[60] flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 flex flex-col gap-4 max-h-[85vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <span class="text-xl">♘</span>
+          <span>各駒の動きと解説</span>
+        </h3>
+        <button onclick="closePieceRulesModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 divide-y divide-slate-100">
+        <div class="pt-2 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♙</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">ポーン (Pawn)</h4>
+            <p class="mt-0.5">前に1マス進めます（最初の位置からのみ2マス進行可能）。相手の駒を取るときは斜め前1マスに移動します。最奥に達するとプロモーション（他の駒へ昇格）します。</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♘</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">ナイト (Knight)</h4>
+            <p class="mt-0.5">L字型（縦2マス＋横1マス、または縦1マス＋横2マス）に移動します。途中の駒を飛び越えて進むことができる唯一の駒です。</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♗</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">ビショップ (Bishop)</h4>
+            <p class="mt-0.5">斜め方向に障害物がない限り何マスでも進めます。</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♖</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">ルーク (Rook)</h4>
+            <p class="mt-0.5">縦・横方向に障害物がない限り何マスでも進めます。キングとの特殊手「キャスリング」にも使用します。</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♕</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">クイーン (Queen)</h4>
+            <p class="mt-0.5">縦・横・斜めの全方向に何マスでも進める最強の駒です。</p>
+          </div>
+        </div>
+
+        <div class="pt-3 flex items-start gap-3">
+          <div class="text-3xl font-bold text-slate-800 w-8 text-center">♔</div>
+          <div>
+            <h4 class="font-bold text-slate-800 text-sm">キング (King)</h4>
+            <p class="mt-0.5">全方向に1マス移動できます。相手の攻撃（王手）から守る必要があり、逃げ場がなくなるとチェックメイト（敗北）となります。</p>
+          </div>
+        </div>
+      </div>
+
+      <button onclick="closePieceRulesModal()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl text-sm transition shadow-sm mt-2">
+        ルール一覧に戻る
+      </button>
+    </div>
+  </div>
+
+  <!-- JavaScript ロジック -->
+  <script>
+    // --- 状態変数 ---
+    let board = [];
+    let turn = 'w';
+    let castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
+    let enPassantTarget = null;
+    let halfmoveClock = 0;
+    let moveHistory = [];
+    let positionHistory = {};
+
+    let selectedSquare = null;
+    let validMoves = [];
+    let isFlipped = false;
+    let isBoardFocusMode = false;
+    let isAnimating = false;
+    let isPromoting = false;
+    let currentTheme = 'light';
+
+    // 座標表示設定（デフォルト: 表示 ON）
+    let showCoordinates = true;
+
+    // --- プレイヤー名とスコア管理用変数 ---
+    let playerNames = { white: '白プレイヤー', black: '黒プレイヤー' };
+    let score = { white: 0, black: 0, draws: 0 };
+
+    // チェスタイマー変数
+    let initialTimeSec = 300;
+    let whiteTime = 300;
+    let blackTime = 300;
+    let timerInterval = null;
+    let isTimerRunning = false;
+    let isTimerPaused = false;
+    let isGameOver = false;
+
+    // リプレイ用
+    let replayIndex = -1;
+    let isReplaying = false;
+    let replayTimer = null;
+
+    // 追加：フィッシャー・ディレイ用設定
+    let timerMode = 'normal'; // 'normal', 'fisher', 'delay'
+    let incrementSec = 0;     // フィッシャー用の加算秒数、またはディレイの猶予秒数
+    let currentDelayTime = 0; // ディレイ中の残り秒数（一時保持用）
+
+    // DOM キャッシュ
+    const squareDOMCache = [];
+
+    // --- PWA & Service Worker 動的登録 ---
+    function initPWAAndOffline() {
+      const manifestData = {
+        name: "Chess",
+        short_name: "Chess",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#0f172a",
+        theme_color: "#0f172a",
+        icons: [{
+          src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text x='50' y='72' font-size='70' text-anchor='middle' fill='%23f8fafc'>♔</text></svg>",
+          sizes: "192x192 512x512",
+          type: "image/svg+xml"
+        }]
+      };
+      const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/manifest+json' });
+      const manifestUrl = URL.createObjectURL(manifestBlob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestUrl;
+      document.head.appendChild(link);
+
+      if ('serviceWorker' in navigator) {
+        const swCode = `
+          const CACHE_NAME = 'chess-pwa-v1';
+          self.addEventListener('install', (e) => {
+            e.waitUntil(
+              caches.open(CACHE_NAME).then((cache) => {
+                return cache.addAll(['./']);
+              })
+            );
+            self.skipWaiting();
+          });
+          self.addEventListener('activate', (e) => {
+            e.waitUntil(self.clients.claim());
+          });
+          self.addEventListener('fetch', (e) => {
+            e.respondWith(
+              caches.match(e.request).then((res) => {
+                return res || fetch(e.request).then((fetchRes) => {
+                  return caches.open(CACHE_NAME).then((cache) => {
+                    cache.put(e.request, fetchRes.clone());
+                    return fetchRes;
+                  });
+                }).catch(() => res);
+              })
+            );
+          });
+        `;
+        const swBlob = new Blob([swCode], { type: 'text/javascript' });
+        const swUrl = URL.createObjectURL(swBlob);
+        navigator.serviceWorker.register(swUrl).catch(() => {});
+      }
+    }
+
+    function toggleCoordinates() {
+      showCoordinates = !showCoordinates;
+      const btnText = document.getElementById('coord-btn-text');
+      if (btnText) btnText.textContent = `座標: ${showCoordinates ? 'ON' : 'OFF'}`;
+      updateBoardDOM(); // 盤面を再描画して反映
+    }
+
+    function openNameModal() {
+      document.getElementById('input-white-name').value = playerNames.white;
+      document.getElementById('input-black-name').value = playerNames.black;
+      document.getElementById('name-modal').classList.remove('hidden');
+    }
+    function closeNameModal() {
+      document.getElementById('name-modal').classList.add('hidden');
+    }
+    function savePlayerNames() {
+      const wName = document.getElementById('input-white-name').value.trim();
+      const bName = document.getElementById('input-black-name').value.trim();
+      if (wName) playerNames.white = wName;
+      if (bName) playerNames.black = bName;
+      closeNameModal();
+      updateScoreboardDOM();
+    }
+
+    function updateScoreboardDOM() {
+      const wNameEl = document.getElementById('sb-white-name');
+      const bNameEl = document.getElementById('sb-black-name');
+
+      if (wNameEl) wNameEl.textContent = playerNames.white;
+      if (bNameEl) bNameEl.textContent = playerNames.black;
+
+      const sw = document.getElementById('score-white');
+      const sb = document.getElementById('score-black');
+      const sd = document.getElementById('score-draw');
+
+      if (sw) sw.textContent = score.white;
+      if (sb) sb.textContent = score.black;
+      if (sd) sd.textContent = score.draws;
+    }
+
+    // --- ローカルストレージによる自動セーブ・ロード ---
+    function saveGameState() {
+      const state = {
+        board,
+        turn,
+        castlingRights,
+        enPassantTarget,
+        halfmoveClock,
+        moveHistory,
+        positionHistory,
+        initialTimeSec,
+        whiteTime,
+        blackTime,
+        isGameOver,
+        score,        // ← 追加！
+        playerNames   // ← 追加！
+      };
+      try {
+        localStorage.setItem('chess_saved_game', JSON.stringify(state));
+      } catch (e) {}
+    }
+
+    function loadGameState() {
+      try {
+        const saved = localStorage.getItem('chess_saved_game');
+        if (saved) {
+          const state = JSON.parse(saved);
+          board = state.board;
+          turn = state.turn;
+          castlingRights = state.castlingRights;
+          enPassantTarget = state.enPassantTarget;
+          halfmoveClock = state.halfmoveClock;
+          moveHistory = state.moveHistory || [];
+          positionHistory = state.positionHistory || {};
+          initialTimeSec = state.initialTimeSec !== undefined ? state.initialTimeSec : 300;
+          whiteTime = state.whiteTime !== undefined ? state.whiteTime : initialTimeSec;
+          blackTime = state.blackTime !== undefined ? state.blackTime : initialTimeSec;
+          isGameOver = state.isGameOver || false;
+
+          // ▼ 読み込み時にスコアとプレイヤー名も復元
+          if (state.score) score = state.score;
+          if (state.playerNames) playerNames = state.playerNames;
+
+          if (moveHistory.length > 0 && !isGameOver && initialTimeSec > 0) {
+            startTimer();
+          }
+          if (moveHistory.length > 0) {
+            enableReplayControls();
+          }
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    // --- Web Audio API 効果音 & バイブレーション ---
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function triggerVibration(pattern = 15) {
+      if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+        try { navigator.vibrate(pattern); } catch (e) {}
+      }
+    }
+
+    function playSound(type) {
+      try {
+        const ctx = getAudioContext();
+        if (!ctx) return;
+        const now = ctx.currentTime;
+
+        if (type === 'move') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(320, now);
+          osc.frequency.exponentialRampToValueAtTime(140, now + 0.08);
+          gain.gain.setValueAtTime(0.3, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'capture') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(70, now + 0.1);
+          gain.gain.setValueAtTime(0.35, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.1);
+        } else if (type === 'check') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.setValueAtTime(880, now + 0.08);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'castle') {
+          [0, 0.07].forEach((delay, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(idx === 0 ? 300 : 420, now + delay);
+            gain.gain.setValueAtTime(0.25, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.06);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.06);
+          });
+        } else if (type === 'gameover') {
+          [0, 0.12, 0.24].forEach((delay, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            const freqs = [523.25, 659.25, 783.99];
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freqs[idx], now + delay);
+            gain.gain.setValueAtTime(0.3, now + delay);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + delay + 0.35);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + delay);
+            osc.stop(now + delay + 0.35);
+          });
+        }
+      } catch (e) {}
+    }
+
+    // --- カスタム通知モーダル ---
+    function showCustomAlert(msg) {
+      document.getElementById('info-modal-text').textContent = msg;
+      document.getElementById('info-modal').classList.remove('hidden');
+    }
+    function closeInfoModal() {
+      document.getElementById('info-modal').classList.add('hidden');
+    }
+
+    // 駒の価値定義 (Pawn=1, Knight=3, Bishop=3, Rook=5, Queen=9)
+const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+
+function updateMaterialBar() {
+  const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
+    ? moveHistory[replayIndex].boardState
+    : board;
+
+  let whitePoints = 0;
+  let blackPoints = 0;
+
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece = activeBoard[r][c];
+      if (piece) {
+        const val = pieceValues[piece.t] || 0;
+        if (piece.c === 'w') whitePoints += val;
+        else blackPoints += val;
+      }
+    }
+  }
+
+  const diff = whitePoints - blackPoints;
+  const whiteDiffEl = document.getElementById('material-white-diff');
+  const blackDiffEl = document.getElementById('material-black-diff');
+  const fillWhiteEl = document.getElementById('material-fill-white');
+
+  if (whiteDiffEl && blackDiffEl && fillWhiteEl) {
+    if (diff > 0) {
+      whiteDiffEl.textContent = `+${diff}`;
+      blackDiffEl.textContent = '';
+    } else if (diff < 0) {
+      whiteDiffEl.textContent = '';
+      blackDiffEl.textContent = `+${Math.abs(diff)}`;
+    } else {
+      whiteDiffEl.textContent = '0';
+      blackDiffEl.textContent = '0';
+    }
+
+    // バーの高さを計算（合計点数に対する白の割合を反映）
+    const total = whitePoints + blackPoints;
+    let whitePercent = total > 0 ? (whitePoints / total) * 100 : 50;
+    fillWhiteEl.style.height = `${whitePercent}%`;
+  }
+}
+
+    // --- テーマ切り替え ---
+    function toggleTheme() {
+      currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.body.classList.toggle('dark-mode', currentTheme === 'dark');
+
+      const icon = document.getElementById('theme-btn-icon');
+      const text = document.getElementById('theme-btn-text');
+      if (icon && text) {
+        if (currentTheme === 'dark') {
+          icon.className = 'fa-solid fa-sun text-xs text-amber-400';
+          text.textContent = 'ライト';
+        } else {
+          icon.className = 'fa-solid fa-moon text-xs';
+          text.textContent = 'ダーク';
+        }
+      }
+      triggerVibration(10);
+      updateBoardDOM();
+    }
+
+    // --- Unicode マッピング ---
+    function getPieceUnicode(type, color) {
+      const map = {
+        'w': { 'k': '♔\uFE0E', 'q': '♕\uFE0E', 'r': '♖\uFE0E', 'b': '♗\uFE0E', 'n': '♘\uFE0E', 'p': '♙\uFE0E' },
+        'b': { 'k': '♚\uFE0E', 'q': '♛\uFE0E', 'r': '♜\uFE0E', 'b': '♝\uFE0E', 'n': '♞\uFE0E', 'p': '♟\uFE0E' }
+      };
+      return map[color]?.[type] || '';
+    }
+
+    // --- 初期化 ---
+    function initBoardState() {
+      board = [
+        [ {t:'r',c:'b'}, {t:'n',c:'b'}, {t:'b',c:'b'}, {t:'q',c:'b'}, {t:'k',c:'b'}, {t:'b',c:'b'}, {t:'n',c:'b'}, {t:'r',c:'b'} ],
+        [ {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'} ],
+        [ null, null, null, null, null, null, null, null ],
+        [ null, null, null, null, null, null, null, null ],
+        [ null, null, null, null, null, null, null, null ],
+        [ null, null, null, null, null, null, null, null ],
+        [ {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'}, {t:'p',c:'w'} ],
+        [ {t:'r',c:'w'}, {t:'n',c:'w'}, {t:'b',c:'w'}, {t:'q',c:'w'}, {t:'k',c:'w'}, {t:'b',c:'w'}, {t:'n',c:'w'}, {t:'r',c:'w'} ]
+      ];
+      turn = 'w';
+      castlingRights = { wK: true, wQ: true, bK: true, bQ: true };
+      enPassantTarget = null;
+      halfmoveClock = 0;
+      moveHistory = [];
+      positionHistory = {};
+      selectedSquare = null;
+      validMoves = [];
+      replayIndex = -1;
+      isGameOver = false;
+      stopReplayAuto();
+
+      resetTimer();
+      recordPosition();
+    }
+
+    function createBoardDOM() {
+      const container = document.getElementById('board-container');
+      container.innerHTML = '';
+      squareDOMCache.length = 0;
+
+      const svgNS = "http://www.w3.org/2000/svg";
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.id = 'check-line-svg';
+      svg.setAttribute('class', 'absolute inset-0 w-full h-full pointer-events-none z-30');
+      svg.setAttribute('viewBox', '0 0 8 8');
+      svg.setAttribute('preserveAspectRatio', 'none');
+
+      const line = document.createElementNS(svgNS, 'line');
+      line.id = 'check-line';
+      line.setAttribute('x1', '0');
+      line.setAttribute('y1', '0');
+      line.setAttribute('x2', '0');
+      line.setAttribute('y2', '0');
+      line.setAttribute('stroke', '#ef4444');
+      line.setAttribute('stroke-width', '0.04');
+      line.setAttribute('stroke-linecap', 'round');
+      line.classList.add('hidden');
+
+      svg.appendChild(line);
+      container.appendChild(svg);
+
+      for (let i = 0; i < 64; i++) {
+        const sq = document.createElement('div');
+        sq.className = 'relative flex items-center justify-center cursor-pointer transition-colors duration-75';
+        
+        const pieceSpan = document.createElement('span');
+        pieceSpan.className = 'select-none leading-none';
+        sq.appendChild(pieceSpan);
+
+        const guideDot = document.createElement('div');
+        guideDot.className = 'absolute w-3.5 h-3.5 rounded-full bg-slate-400/40 pointer-events-none hidden';
+        sq.appendChild(guideDot);
+
+        const guideRing = document.createElement('div');
+        guideRing.className = 'absolute inset-0 border-4 border-slate-400/40 rounded-full pointer-events-none hidden';
+        sq.appendChild(guideRing);
+
+        sq.addEventListener('click', () => onSquareClickByIndex(i));
+
+        container.appendChild(sq);
+        squareDOMCache.push({ container: sq, pieceSpan, guideDot, guideRing, r: 0, c: 0 });
+      }
+    }
+
+    function updateBoardDOM() {
+      const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
+        ? moveHistory[replayIndex].boardState
+        : board;
+
+      const lastMove = (replayIndex >= 0)
+        ? moveHistory[replayIndex]
+        : (moveHistory.length > 0 ? moveHistory[moveHistory.length - 1] : null);
+
+      const files = ['a','b','c','d','e','f','g','h'];
+      const ranks = ['8','7','6','5','4','3','2','1'];
+
+      for (let displayR = 0; displayR < 8; displayR++) {
+        for (let displayC = 0; displayC < 8; displayC++) {
+          const r = isFlipped ? 7 - displayR : displayR;
+          const c = isFlipped ? 7 - displayC : displayC;
+          const idx = displayR * 8 + displayC;
+          const dom = squareDOMCache[idx];
+
+          dom.r = r;
+          dom.c = c;
+
+          const isDark = (r + c) % 2 === 1;
+          let bgClass = isDark ? 'square-dark' : 'square-light';
+
+          if (selectedSquare && selectedSquare.r === r && selectedSquare.c === c) {
+            bgClass = 'square-selected';
+          } else if (lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c))) {
+            bgClass = 'square-last-move';
+          }
+
+          dom.container.className = `relative flex items-center justify-center cursor-pointer transition-colors duration-75 ${bgClass}`;
+
+          // 古い座標ラベルを消去
+          const oldLabels = dom.container.querySelectorAll('.coord-label');
+          oldLabels.forEach(l => l.remove());
+
+          // 座標を表示する設定の場合のみ生成
+          if (showCoordinates) {
+            // 一番下の行にファイル（a〜h）を表示
+            if (displayR === 7) {
+              const fileSpan = document.createElement('span');
+              fileSpan.className = 'coord-label absolute bottom-0.5 right-1 text-[9px] md:text-[11px] font-bold select-none pointer-events-none opacity-80 z-0';
+              fileSpan.textContent = files[c];
+              dom.container.appendChild(fileSpan);
+            }
+            // 一番左の列にランク（1〜8）を表示
+            if (displayC === 0) {
+              const rankSpan = document.createElement('span');
+              rankSpan.className = 'coord-label absolute top-0.5 left-1 text-[9px] md:text-[11px] font-bold select-none pointer-events-none opacity-80 z-0';
+              rankSpan.textContent = ranks[r];
+              dom.container.appendChild(rankSpan);
+            }
+          }
+
+          const piece = activeBoard[r][c];
+          if (piece) {
+            const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
+            const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
+            const rotateClass = isRotated ? 'rotate-180-fixed' : '';
+
+            dom.pieceSpan.className = `font-normal select-none leading-none ${colorClass} ${rotateClass} z-10`;
+            dom.pieceSpan.style.fontSize = `${dom.container.clientWidth * 0.75}px`;
+            dom.pieceSpan.textContent = getPieceUnicode(piece.t, piece.c);
+            dom.pieceSpan.style.display = 'block';
+          } else {
+            dom.pieceSpan.textContent = '';
+            dom.pieceSpan.style.display = 'none';
+          }
+
+          const isTargetMove = validMoves.find(m => m.to.r === r && m.to.c === c);
+          if (isTargetMove && replayIndex === -1) {
+            if (piece || isTargetMove.isEnPassant) {
+              dom.guideRing.classList.remove('hidden');
+              dom.guideDot.classList.add('hidden');
+            } else {
+              dom.guideDot.classList.remove('hidden');
+              dom.guideRing.classList.add('hidden');
+            }
+          } else {
+            dom.guideDot.classList.add('hidden');
+            dom.guideRing.classList.add('hidden');
+          }
+        }
+      }
+
+      updateCheckLine();
+      renderStatus();
+      updateMaterialBar();
+    }
+
+    // ▼ ポーン昇格選択モーダルを表示する関数
+    function showPromotionModal(moveObj) {
+      isPromoting = true;
+      const optionsContainer = document.getElementById('promotion-options');
+      optionsContainer.innerHTML = '';
+
+      const promoPieces = [
+        { t: 'q', name: 'クイーン' },
+        { t: 'r', name: 'ルーク' },
+        { t: 'b', name: 'ビショップ' },
+        { t: 'n', name: 'ナイト' }
+      ];
+
+      for (const p of promoPieces) {
+        const btn = document.createElement('button');
+        btn.className = 'flex flex-col items-center justify-center p-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl transition border border-slate-200';
+        
+        const span = document.createElement('span');
+        span.className = 'text-3xl mb-1 ' + (turn === 'w' ? 'white-piece' : 'black-piece');
+        span.textContent = getPieceUnicode(p.t, turn);
+
+        const label = document.createElement('span');
+        label.className = 'text-xs font-semibold';
+        label.textContent = p.name;
+
+        btn.appendChild(span);
+        btn.appendChild(label);
+
+        btn.onclick = () => {
+          document.getElementById('promotion-modal').classList.add('hidden');
+          isPromoting = false;
+          animateAndExecuteMove(moveObj, p.t);
+        };
+
+        optionsContainer.appendChild(btn);
+      }
+
+      document.getElementById('promotion-modal').classList.remove('hidden');
+    }
+
+    function onSquareClickByIndex(idx) {
+      if (isAnimating || isPromoting || isGameOver) return;
+      if (replayIndex >= 0) return;
+
+      const dom = squareDOMCache[idx];
+      onSquareClick(dom.r, dom.c);
+    }
+
+    function onSquareClick(r, c) {
+      if (isAnimating || isPromoting || isGameOver) return;
+      getAudioContext();
+      const piece = board[r][c];
+
+      if (selectedSquare) {
+        const move = validMoves.find(m => m.to.r === r && m.to.c === c);
+        if (move) {
+          if (move.isPromotion) {
+            showPromotionModal(move);
+          } else {
+            animateAndExecuteMove(move);
+          }
+          selectedSquare = null;
+          validMoves = [];
+          return;
+        }
+      }
+
+      if (piece && piece.c === turn) {
+        selectedSquare = { r, c };
+        validMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget).filter(m => m.from.r === r && m.from.c === c);
+        triggerVibration(12);
+      } else {
+        selectedSquare = null;
+        validMoves = [];
+      }
+      updateBoardDOM();
+    }
+
+    function animateAndExecuteMove(moveObj, promoChoice = null) {
+      if (isAnimating) return;
+      isAnimating = true;
+
+      const { from, to } = moveObj;
+      const boardContainer = document.getElementById('board-container');
+      const piece = board[from.r][from.c];
+
+      if (!piece || !boardContainer) {
+        executeMove(moveObj, promoChoice);
+        isAnimating = false;
+        return;
+      }
+
+      const displayFromR = isFlipped ? 7 - from.r : from.r;
+      const displayFromC = isFlipped ? 7 - from.c : from.c;
+      const displayToR = isFlipped ? 7 - to.r : to.r;
+      const displayToC = isFlipped ? 7 - to.c : to.c;
+
+      const fromIdx = displayFromR * 8 + displayFromC;
+      const fromDom = squareDOMCache[fromIdx];
+
+      const rect = boardContainer.getBoundingClientRect();
+      const sqSize = rect.width / 8;
+
+      let floater = document.getElementById('floating-piece');
+      let floaterInner = document.getElementById('floating-piece-inner');
+      if (!floater) {
+        floater = document.createElement('div');
+        floater.id = 'floating-piece';
+        floaterInner = document.createElement('span');
+        floaterInner.id = 'floating-piece-inner';
+        floater.appendChild(floaterInner);
+        boardContainer.appendChild(floater);
+      }
+
+      const startX = displayFromC * sqSize;
+      const startY = displayFromR * sqSize;
+      const endX = displayToC * sqSize;
+      const endY = displayToR * sqSize;
+
+      const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
+      const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
+      const rotateClass = isRotated ? 'rotate-180-fixed' : '';
+
+      floater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
+      floater.style.width = `${sqSize}px`;
+      floater.style.height = `${sqSize}px`;
+
+      let fontSize = `${sqSize * 0.75}px`;
+      if (fromDom && fromDom.pieceSpan) {
+        const comp = window.getComputedStyle(fromDom.pieceSpan);
+        if (comp.fontSize && comp.fontSize !== '0px') fontSize = comp.fontSize;
+      }
+
+      floaterInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
+      floaterInner.style.fontSize = fontSize;
+      floaterInner.textContent = getPieceUnicode(piece.t, piece.c);
+
+      if (fromDom && fromDom.pieceSpan) {
+        fromDom.pieceSpan.style.opacity = '0';
+      }
+
+      floater.style.transition = 'none';
+      floater.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
+      floater.style.display = 'flex';
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const dx = endX - startX;
+          const dy = endY - startY;
+          const dist = Math.hypot(dx, dy);
+          const duration = Math.min(260, Math.max(160, Math.round(dist * 0.4)));
+
+          floater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+          floater.style.transform = `translate3d(${endX}px, ${endY}px, 0)`;
+
+          setTimeout(() => {
+            executeMove(moveObj, promoChoice);
+
+            requestAnimationFrame(() => {
+              floater.style.display = 'none';
+              if (fromDom && fromDom.pieceSpan) {
+                fromDom.pieceSpan.style.opacity = '1';
+              }
+              isAnimating = false;
+            });
+          }, duration);
+        });
+      });
+    }
+
+    function executeMove(moveObj, promoChoice = null) {
+      const { from, to, isCastling, isEnPassant, isPromotion } = moveObj;
+      const movingPiece = board[from.r][from.c];
+      const capturedPiece = isEnPassant ? board[from.r][to.c] : board[to.r][to.c];
+
+      board[to.r][to.c] = movingPiece;
+      board[from.r][from.c] = null;
+
+      if (isCastling) {
+        if (to.c === 6) {
+          board[to.r][5] = board[to.r][7];
+          board[to.r][7] = null;
+        } else if (to.c === 2) {
+          board[to.r][3] = board[to.r][0];
+          board[to.r][0] = null;
+        }
+        playSound('castle');
+        triggerVibration([15, 30, 15]);
+      } else if (isEnPassant) {
+        board[from.r][to.c] = null;
+        playSound('capture');
+        triggerVibration(25);
+      } else if (isPromotion) {
+        const choice = promoChoice || 'q';
+        board[to.r][to.c] = { t: choice, c: turn };
+        playSound(capturedPiece ? 'capture' : 'move');
+        triggerVibration(capturedPiece ? 25 : 15);
+      } else {
+        playSound(capturedPiece ? 'capture' : 'move');
+        triggerVibration(capturedPiece ? 25 : 15);
+      }
+
+      const nextCastling = computeNextCastlingRights(castlingRights, from, to);
+
+      let nextEP = null;
+      if (movingPiece.t === 'p' && Math.abs(to.r - from.r) === 2) {
+        nextEP = { r: (from.r + to.r) / 2, c: from.c };
+      }
+
+      let nextHalfmove = halfmoveClock + 1;
+      if (movingPiece.t === 'p' || capturedPiece) {
+        nextHalfmove = 0;
+      }
+
+      const san = formatSAN(moveObj, movingPiece, capturedPiece, promoChoice);
+
+      const moveRecord = {
+        from, to,
+        piece: { ...movingPiece },
+        captured: capturedPiece ? { ...capturedPiece } : null,
+        promo: promoChoice,
+        castling: isCastling,
+        ep: isEnPassant,
+        prevCastlingRights: { ...castlingRights },
+        prevEP: enPassantTarget,
+        prevHalfmove: halfmoveClock,
+        boardState: cloneBoard(board),
+        san
+      };
+      moveHistory.push(moveRecord);
+
+      // --- フィッシャーモードの場合、直前に指したプレイヤーに時間を加算 ---
+      if (timerMode === 'fisher' && incrementSec > 0) {
+        if (turn === 'w') {
+          whiteTime += incrementSec;
+        } else {
+          blackTime += incrementSec;
+        }
+      }
+
+      castlingRights = nextCastling;
+      enPassantTarget = nextEP;
+      halfmoveClock = nextHalfmove;
+      turn = turn === 'w' ? 'b' : 'w';
+
+      if (initialTimeSec > 0) {
+        startTimer();
+      }
+
+      recordPosition();
+      updateBoardDOM();
+      renderHistoryTable();
+
+      if (isInCheck(board, turn)) {
+        playSound('check');
+        triggerVibration([30, 40, 30]);
+      }
+
+      checkGameOverConditions();
+      saveGameState();
+    }
+
+    // --- チェスタイマー管理機能 ---
+    function formatTime(seconds) {
+      if (seconds <= 0) return '00:00';
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    function updateTimerDOM() {
+      const timerDisplayBar = document.getElementById('timer-display-bar');
+      const focusBlackBar = document.getElementById('focus-black-bar');
+      const focusWhiteBar = document.getElementById('focus-white-bar');
+
+      if (initialTimeSec === 0) {
+        if (timerDisplayBar) timerDisplayBar.classList.add('hidden');
+        if (focusBlackBar) focusBlackBar.classList.add('hidden');
+        if (focusWhiteBar) focusWhiteBar.classList.add('hidden');
+        return;
+      } else {
+        if (timerDisplayBar && !isBoardFocusMode) timerDisplayBar.classList.remove('hidden');
+        if (focusBlackBar && isBoardFocusMode) focusBlackBar.classList.remove('hidden');
+        if (focusWhiteBar && isBoardFocusMode) focusWhiteBar.classList.remove('hidden');
+      }
+
+      const whiteStr = formatTime(whiteTime);
+      const blackStr = formatTime(blackTime);
+
+      const wText = document.getElementById('timer-white-text');
+      const bText = document.getElementById('timer-black-text');
+      const wBox = document.getElementById('white-timer-box');
+      const bBox = document.getElementById('black-timer-box');
+
+      if (wText) wText.textContent = whiteStr;
+      if (bText) bText.textContent = blackStr;
+
+      const fwText = document.getElementById('focus-timer-white');
+      const fbText = document.getElementById('focus-timer-black');
+      if (fwText) fwText.textContent = whiteStr;
+      if (fbText) fbText.textContent = blackStr;
+
+      if (wBox && bBox) {
+        if (turn === 'w') {
+          wBox.className = 'flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-50 border-2 border-indigo-500 rounded-lg shadow-sm';
+          bBox.className = 'flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 border border-slate-200 opacity-70';
+        } else {
+          bBox.className = 'flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-50 border-2 border-indigo-500 rounded-lg shadow-sm';
+          wBox.className = 'flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 border border-slate-200 opacity-70';
+        }
+      }
+    }
+
+    function startTimer() {
+      if (initialTimeSec === 0 || isTimerPaused || isGameOver) return;
+      stopTimer();
+      isTimerRunning = true;
+
+      // ディレイモードの場合、手番開始時にディレイ秒数をセット
+      if (timerMode === 'delay') {
+        currentDelayTime = incrementSec;
+      }
+
+      timerInterval = setInterval(() => {
+        // ディレイ中で、かつ猶予時間が残っている場合
+        if (timerMode === 'delay' && currentDelayTime > 0) {
+          currentDelayTime--;
+          updateTimerDOM();
+          return; // タイマー本体の減算スキップ
+        }
+
+        // 通常のカウントダウン
+        if (turn === 'w') {
+          whiteTime--;
+          if (whiteTime <= 0) {
+            whiteTime = 0;
+            updateTimerDOM();
+            handleTimeout('w');
+            return;
+          }
+        } else {
+          blackTime--;
+          if (blackTime <= 0) {
+            blackTime = 0;
+            updateTimerDOM();
+            handleTimeout('b');
+            return;
+          }
+        }
+        updateTimerDOM();
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
+      isTimerRunning = false;
+    }
+
+    function resetTimer() {
+      stopTimer();
+      whiteTime = initialTimeSec;
+      blackTime = initialTimeSec;
+      isTimerPaused = false;
+      const icon = document.getElementById('timer-toggle-icon');
+      if (icon) icon.className = 'fa-solid fa-pause';
+      updateTimerDOM();
+    }
+
+    function toggleTimerPause() {
+      if (initialTimeSec === 0 || isGameOver) return;
+      isTimerPaused = !isTimerPaused;
+      const icon = document.getElementById('timer-toggle-icon');
+
+      if (isTimerPaused) {
+        stopTimer();
+        if (icon) icon.className = 'fa-solid fa-play';
+      } else {
+        if (moveHistory.length > 0) startTimer();
+        if (icon) icon.className = 'fa-solid fa-pause';
+      }
+    }
+
+    function handleTimeout(loserColor) {
+      stopTimer();
+      isGameOver = true;
+      if (loserColor === 'w') {
+        score.black++;
+        showGameOverModal(`時間切れ！ ${playerNames.white}のタイマーがゼロになりました。${playerNames.black}の勝利です！`);
+      } else {
+        score.white++;
+        showGameOverModal(`時間切れ！ ${playerNames.black}のタイマーがゼロになりました。${playerNames.white}の勝利です！`);
+      }
+      updateScoreboardDOM();
+      saveGameState();
+      enableReplayControls();
+    }
+
+    function openTimerModal() { document.getElementById('timer-modal').classList.remove('hidden'); }
+    function closeTimerModal() { document.getElementById('timer-modal').classList.add('hidden'); }
+
+    function setTimerPreset(seconds, inc = 0, mode = 'normal') {
+      initialTimeSec = seconds;
+      incrementSec = inc;
+      timerMode = mode;
+      closeTimerModal();
+      resetGame();
+    }
+
+    function formatSAN(move, piece, captured, promo) {
+      if (move.isCastling) {
+        return move.to.c === 6 ? 'O-O' : 'O-O-O';
+      }
+      const files = ['a','b','c','d','e','f','g','h'];
+      const ranks = ['8','7','6','5','4','3','2','1'];
+      let str = '';
+      if (piece.t !== 'p') {
+        str += piece.t.toUpperCase();
+      } else if (captured) {
+        str += files[move.from.c];
+      }
+      if (captured) str += 'x';
+      str += files[move.to.c] + ranks[move.to.r];
+      if (promo) str += '=' + promo.toUpperCase();
+      return str;
+    }
+
+    function getPositionKey() {
+      return JSON.stringify({
+        board,
+        turn,
+        castlingRights,
+        ep: enPassantTarget
+      });
+    }
+
+    function recordPosition() {
+      const key = getPositionKey();
+      positionHistory[key] = (positionHistory[key] || 0) + 1;
+    }
+
+    function computeNextCastlingRights(currentRights, from, to) {
+      const r = { ...currentRights };
+      if (from.r === 7 && from.c === 4) { r.wK = false; r.wQ = false; }
+      if (from.r === 0 && from.c === 4) { r.bK = false; r.bQ = false; }
+
+      if ((from.r === 7 && from.c === 0) || (to.r === 7 && to.c === 0)) r.wQ = false;
+      if ((from.r === 7 && from.c === 7) || (to.r === 7 && to.c === 7)) r.wK = false;
+      if ((from.r === 0 && from.c === 0) || (to.r === 0 && to.c === 0)) r.bQ = false;
+      if ((from.r === 0 && from.c === 7) || (to.r === 0 && to.c === 7)) r.bK = false;
+
+      return r;
+    }
+
+    function cloneBoard(bd) {
+      return bd.map(row => row.map(cell => cell ? { ...cell } : null));
+    }
+
+    function getLegalMoves(bd, color, cRights, epTarget) {
+      const pseudoMoves = getPseudoMoves(bd, color, cRights, epTarget);
+      const legal = [];
+
+      for (const m of pseudoMoves) {
+        const nextBd = cloneBoard(bd);
+        nextBd[m.to.r][m.to.c] = nextBd[m.from.r][m.from.c];
+        nextBd[m.from.r][m.from.c] = null;
+        if (m.isEnPassant) nextBd[m.from.r][m.to.c] = null;
+        if (m.isCastling) {
+          if (m.to.c === 6) { nextBd[m.to.r][5] = nextBd[m.to.r][7]; nextBd[m.to.r][7] = null; }
+          if (m.to.c === 2) { nextBd[m.to.r][3] = nextBd[m.to.r][0]; nextBd[m.to.r][0] = null; }
+        }
+
+        if (!isInCheck(nextBd, color)) {
+          legal.push(m);
+        }
+      }
+      return legal;
+    }
+
+    function getPseudoMoves(bd, color, cRights, epTarget) {
+      const moves = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = bd[r][c];
+          if (p && p.c === color) {
+            getPseudoMovesForPiece(bd, r, c, p, cRights, epTarget, moves);
+          }
+        }
+      }
+      return moves;
+    }
+
+    function getPseudoMovesForPiece(bd, r, c, p, cRights, epTarget, moves) {
+      const dir = p.c === 'w' ? -1 : 1;
+      const startRank = p.c === 'w' ? 6 : 1;
+      const promoRank = p.c === 'w' ? 0 : 7;
+
+      if (p.t === 'p') {
+        if (r + dir >= 0 && r + dir < 8 && !bd[r + dir][c]) {
+          const isPromo = (r + dir === promoRank);
+          moves.push({ from: {r,c}, to: {r: r+dir, c}, isPromotion: isPromo });
+          if (r === startRank && !bd[r + dir * 2][c]) {
+            moves.push({ from: {r,c}, to: {r: r+dir*2, c} });
+          }
+        }
+        for (const dc of [-1, 1]) {
+          const nc = c + dc;
+          const nr = r + dir;
+          if (nr >= 0 && nr < 8 && nc >= 0 && nc < 8) {
+            const target = bd[nr][nc];
+            if (target && target.c !== p.c) {
+              moves.push({ from: {r,c}, to: {r: nr, c: nc}, isPromotion: (nr === promoRank) });
+            }
+            if (epTarget && epTarget.r === nr && epTarget.c === nc) {
+              moves.push({ from: {r,c}, to: {r: nr, c: nc}, isEnPassant: true });
+            }
+          }
+        }
+      } else if (p.t === 'n') {
+        const offsets = [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]];
+        for (const [dr, dc] of offsets) {
+          const nr = r + dr, nc = c + dc;
+          if (nr>=0 && nr<8 && nc>=0 && nc<8) {
+            if (!bd[nr][nc] || bd[nr][nc].c !== p.c) {
+              moves.push({ from: {r,c}, to: {r: nr, c: nc} });
+            }
+          }
+        }
+      } else if (p.t === 'k') {
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            if (dr === 0 && dc === 0) continue;
+            const nr = r + dr, nc = c + dc;
+            if (nr>=0 && nr<8 && nc>=0 && nc<8) {
+              if (!bd[nr][nc] || bd[nr][nc].c !== p.c) {
+                moves.push({ from: {r,c}, to: {r: nr, c: nc} });
+              }
+            }
+          }
+        }
+        if (!isInCheck(bd, p.c)) {
+          if (p.c === 'w') {
+            if (cRights.wK && !bd[7][5] && !bd[7][6] && !isSquareAttacked(bd, 7, 5, 'b') && !isSquareAttacked(bd, 7, 6, 'b')) {
+              moves.push({ from: {r:7,c:4}, to: {r:7,c:6}, isCastling: true });
+            }
+            if (cRights.wQ && !bd[7][3] && !bd[7][2] && !bd[7][1] && !isSquareAttacked(bd, 7, 3, 'b') && !isSquareAttacked(bd, 7, 2, 'b')) {
+              moves.push({ from: {r:7,c:4}, to: {r:7,c:2}, isCastling: true });
+            }
+          } else {
+            if (cRights.bK && !bd[0][5] && !bd[0][6] && !isSquareAttacked(bd, 0, 5, 'w') && !isSquareAttacked(bd, 0, 6, 'w')) {
+              moves.push({ from: {r:0,c:4}, to: {r:0,c:6}, isCastling: true });
+            }
+            if (cRights.bQ && !bd[0][3] && !bd[0][2] && !bd[0][1] && !isSquareAttacked(bd, 0, 3, 'w') && !isSquareAttacked(bd, 0, 2, 'w')) {
+              moves.push({ from: {r:0,c:4}, to: {r:0,c:2}, isCastling: true });
+            }
+          }
+        }
+      } else {
+        const dirs = [];
+        if (p.t === 'r' || p.t === 'q') dirs.push([1,0],[-1,0],[0,1],[0,-1]);
+        if (p.t === 'b' || p.t === 'q') dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
+
+        for (const [dr, dc] of dirs) {
+          let nr = r + dr, nc = c + dc;
+          while (nr>=0 && nr<8 && nc>=0 && nc<8) {
+            if (!bd[nr][nc]) {
+              moves.push({ from: {r,c}, to: {r: nr, c: nc} });
+            } else {
+              if (bd[nr][nc].c !== p.c) {
+                moves.push({ from: {r,c}, to: {r: nr, c: nc} });
+              }
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+      }
+    }
+
+    function isInCheck(bd, color) {
+      let kingPos = null;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (bd[r][c] && bd[r][c].t === 'k' && bd[r][c].c === color) {
+            kingPos = { r, c };
+            break;
+          }
+        }
+      }
+      if (!kingPos) return false;
+      const attackerColor = color === 'w' ? 'b' : 'w';
+      return isSquareAttacked(bd, kingPos.r, kingPos.c, attackerColor);
+    }
+
+    function isSquareAttacked(bd, r, c, attackerColor) {
+      for (let ar = 0; ar < 8; ar++) {
+        for (let ac = 0; ac < 8; ac++) {
+          const p = bd[ar][ac];
+          if (p && p.c === attackerColor) {
+            if (canPieceAttackSquare(bd, ar, ac, p, r, c)) return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    function canPieceAttackSquare(bd, ar, ac, p, tr, tc) {
+      const dr = tr - ar, dc = tc - ac;
+      if (p.t === 'p') {
+        const dir = p.c === 'w' ? -1 : 1;
+        return ar + dir === tr && Math.abs(dc) === 1;
+      }
+      if (p.t === 'n') {
+        return (Math.abs(dr)===2 && Math.abs(dc)===1) || (Math.abs(dr)===1 && Math.abs(dc)===2);
+      }
+      if (p.t === 'k') {
+        return Math.abs(dr) <= 1 && Math.abs(dc) <= 1;
+      }
+      if (p.t === 'r' || p.t === 'q') {
+        if (dr === 0 || dc === 0) {
+          const stepR = dr === 0 ? 0 : (dr > 0 ? 1 : -1);
+          const stepC = dc === 0 ? 0 : (dc > 0 ? 1 : -1);
+          let currR = ar + stepR, currC = ac + stepC;
+          while (currR !== tr || currC !== tc) {
+            if (bd[currR][currC]) return false;
+            currR += stepR; currC += stepC;
+          }
+          return true;
+        }
+      }
+      if (p.t === 'b' || p.t === 'q') {
+        if (Math.abs(dr) === Math.abs(dc)) {
+          const stepR = dr > 0 ? 1 : -1;
+          const stepC = dc > 0 ? 1 : -1;
+          let currR = ar + stepR, currC = ac + stepC;
+          while (currR !== tr || currC !== tc) {
+            if (bd[currR][currC]) return false;
+            currR += stepR; currC += stepC;
+          }
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function isDeadPosition(bd) {
+      const pieces = [];
+      for (let r=0; r<8; r++) {
+        for (let c=0; c<8; c++) {
+          if (bd[r][c]) pieces.push({ ...bd[r][c], r, c });
+        }
+      }
+      if (pieces.length === 2) return true;
+      if (pieces.length === 3) {
+        const nonKing = pieces.find(p => p.t !== 'k');
+        if (nonKing && (nonKing.t === 'b' || nonKing.t === 'n')) return true;
+      }
+      if (pieces.length === 4) {
+        const bishops = pieces.filter(p => p.t === 'b');
+        if (bishops.length === 2 && bishops[0].c !== bishops[1].c) {
+          const color1 = (bishops[0].r + bishops[0].c) % 2;
+          const color2 = (bishops[1].r + bishops[1].c) % 2;
+          if (color1 === color2) return true;
+        }
+      }
+      return false;
+    }
+
+    function updateCheckLine() {
+      const line = document.getElementById('check-line');
+      if (!line) return;
+
+      const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
+        ? moveHistory[replayIndex].boardState
+        : board;
+      const activeTurn = (replayIndex >= 0 && replayIndex < moveHistory.length)
+        ? (replayIndex % 2 === 0 ? 'b' : 'w')
+        : turn;
+
+      if (!isInCheck(activeBoard, activeTurn)) {
+        line.classList.add('hidden');
+        return;
+      }
+
+      let kingPos = null;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (activeBoard[r][c] && activeBoard[r][c].t === 'k' && activeBoard[r][c].c === activeTurn) {
+            kingPos = { r, c };
+            break;
+          }
+        }
+      }
+      if (!kingPos) return;
+
+      const attackerColor = activeTurn === 'w' ? 'b' : 'w';
+      let attackerPos = null;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = activeBoard[r][c];
+          if (p && p.c === attackerColor) {
+            if (canPieceAttackSquare(activeBoard, r, c, p, kingPos.r, kingPos.c)) {
+              attackerPos = { r, c };
+              break;
+            }
+          }
+        }
+      }
+
+      if (attackerPos) {
+        const dispAttackerR = isFlipped ? 7 - attackerPos.r : attackerPos.r;
+        const dispAttackerC = isFlipped ? 7 - attackerPos.c : attackerPos.c;
+        const dispKingR = isFlipped ? 7 - kingPos.r : kingPos.r;
+        const dispKingC = isFlipped ? 7 - kingPos.c : kingPos.c;
+
+        const x1 = dispAttackerC + 0.5;
+        const y1 = dispAttackerR + 0.5;
+        const x2 = dispKingC + 0.5;
+        const y2 = dispKingR + 0.5;
+
+        line.setAttribute('x1', `${x1}`);
+        line.setAttribute('y1', `${y1}`);
+        line.setAttribute('x2', `${x2}`);
+        line.setAttribute('y2', `${y2}`);
+        line.setAttribute('stroke-width', '0.04'); 
+        line.classList.remove('hidden');
+      } else {
+        line.classList.add('hidden');
+      }
+    }
+
+    function checkGameOverConditions() {
+      const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+      const inCheck = isInCheck(board, turn);
+
+      if (legalMoves.length === 0) {
+        stopTimer();
+        isGameOver = true;
+        if (inCheck) {
+          const winner = turn === 'w' ? '黒' : '白';
+          console.log("チェックメイト検出！現在のターン：",turn);
+          // ▼ チェックメイト時のスコア加算
+          if (turn === 'w') score.black++;
+          else score.white++;
+
+          console.log("加算後のスコア:", score);
+          showGameOverModal(`チェックメイト！ ${winner} (${playerNames[turn === 'w' ? 'black' : 'white']})の勝利です`);
+        } else {
+          // ▼ ステイルメイト時のスコア加算
+          score.draws++;
+          showGameOverModal('ステイルメイト！ 引き分けです');
+        }
+        updateScoreboardDOM(); // スコアボード更新
+        saveGameState();
+        enableReplayControls();
+        return true;
+      }
+
+      const posKey = getPositionKey();
+      if (positionHistory[posKey] >= 3) {
+        stopTimer();
+        isGameOver = true;
+        score.draws++; // ▼ 引き分けスコア加算
+        updateScoreboardDOM();
+        saveGameState();
+        showGameOverModal('スリーフォールド・レピティション！ 引き分けです');
+        enableReplayControls();
+        return true;
+      }
+
+      if (halfmoveClock >= 100) {
+        stopTimer();
+        isGameOver = true;
+        score.draws++; // ▼ 引き分けスコア加算
+        updateScoreboardDOM();
+        saveGameState();
+        showGameOverModal('50手ルール適用！ 引き分けです');
+        enableReplayControls();
+        return true;
+      }
+
+      if (isDeadPosition(board)) {
+        stopTimer();
+        isGameOver = true;
+        score.draws++; // ▼ 引き分けスコア加算
+        updateScoreboardDOM();
+        saveGameState();
+        showGameOverModal('デッド・ポジション！ メイト不可能なため引き分けです');
+        enableReplayControls();
+        return true;
+      }
+
+      return false;
+    }
+
+    function showGameOverModal(reason) {
+      playSound('gameover');
+      triggerVibration([50, 50, 100]);
+      document.getElementById('gameover-reason-text').textContent = reason;
+      document.getElementById('gameover-modal').classList.remove('hidden');
+    }
+    function hideGameOverModal() {
+      document.getElementById('gameover-modal').classList.add('hidden');
+    }
+
+    // スコアのみをリセットする関数
+    function resetScoreboard() {
+      score = { white: 0, black: 0, draws: 0 };
+      updateScoreboardDOM();
+      saveGameState();
+    }
+
+    function confirmResetGame() {
+      closeResetModal();
+      localStorage.removeItem('chess_saved_game');
+      score = { white: 0, black: 0, draws: 0 }; // ← スコアも初期化
+      resetGame();
+    }
+
+    function renderStatus() {
+      const turnIndicator = document.getElementById('turn-indicator');
+      const statusText = document.getElementById('game-status-text');
+      const checkBadge = document.getElementById('check-badge');
+
+      const activeTurn = (replayIndex >= 0)
+        ? (replayIndex % 2 === 0 ? '黒' : '白')
+        : (turn === 'w' ? '白' : '黒');
+
+      const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
+        ? moveHistory[replayIndex].boardState
+        : board;
+
+      const currentTurnColor = (replayIndex >= 0)
+        ? (replayIndex % 2 === 0 ? 'b' : 'w')
+        : turn;
+
+      if (turnIndicator) {
+        // 一旦クラスをクリアして専用のクラスを付与
+        turnIndicator.className = 'w-3.5 h-3.5 rounded-full inline-block border transition-colors duration-150';
+        if (currentTurnColor === 'w') {
+          turnIndicator.classList.add('turn-white');
+          turnIndicator.classList.remove('turn-black');
+          turnIndicator.style.backgroundColor = '#ffffff'; // 直接指定も併用
+        } else {
+          turnIndicator.classList.add('turn-black');
+          turnIndicator.classList.remove('turn-white');
+          turnIndicator.style.backgroundColor = '';
+        }
+      }
+
+      if (statusText) {
+        statusText.textContent = `${activeTurn}の手番です`;
+        statusText.className = currentTheme === 'dark' ? 'text-base font-bold text-white' : 'text-base font-bold text-slate-800';
+      }
+      if (checkBadge) {
+        if (isInCheck(activeBoard, currentTurnColor)) checkBadge.classList.remove('hidden');
+        else checkBadge.classList.add('hidden');
+      }
+    }
+
+    function renderHistoryTable() {
+      const tbody = document.getElementById('move-history-table');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      for (let i = 0; i < moveHistory.length; i += 2) {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-100/60 cursor-pointer';
+
+        const moveNum = Math.floor(i / 2) + 1;
+        const wMove = moveHistory[i];
+        const bMove = moveHistory[i + 1];
+
+        const tdNum = document.createElement('td');
+        tdNum.className = 'py-1.5 px-2 text-slate-400 text-xs';
+        tdNum.textContent = `${moveNum}.`;
+
+        const tdWhite = document.createElement('td');
+        tdWhite.className = `py-1.5 px-2 ${replayIndex === i ? 'bg-slate-200 font-bold rounded' : ''}`;
+        tdWhite.textContent = wMove ? wMove.san : '';
+        tdWhite.onclick = () => jumpToReplayIndex(i);
+
+        const tdBlack = document.createElement('td');
+        tdBlack.className = `py-1.5 px-2 ${replayIndex === i + 1 ? 'bg-slate-200 font-bold rounded' : ''}`;
+        tdBlack.textContent = bMove ? bMove.san : '';
+        tdBlack.onclick = () => jumpToReplayIndex(i + 1);
+
+        tr.appendChild(tdNum);
+        tr.appendChild(tdWhite);
+        tr.appendChild(tdBlack);
+        tbody.appendChild(tr);
+      }
+
+      const container = document.getElementById('move-history-container');
+      if (container) container.scrollTop = container.scrollHeight;
+    }
+
+    function undoMove() {
+      if (moveHistory.length === 0 || isAnimating || isPromoting) return;
+      stopReplayAuto();
+      replayIndex = -1;
+      isGameOver = false;
+
+      if (moveHistory.length === 0) return;
+      const currentKey = getPositionKey();
+      if (positionHistory[currentKey]) {
+        positionHistory[currentKey]--;
+        if (positionHistory[currentKey] <= 0) {
+          delete positionHistory[currentKey];
+        }
+      }
+
+      const lastMove = moveHistory.pop();
+      const { from, to, piece, captured, castling, ep, prevCastlingRights, prevEP, prevHalfmove } = lastMove;
+
+      board[from.r][from.c] = piece;
+      board[to.r][to.c] = captured ? captured : null;
+
+      if (castling) {
+        if (to.c === 6) { board[to.r][7] = board[to.r][5]; board[to.r][5] = null; }
+        if (to.c === 2) { board[to.r][0] = board[to.r][3]; board[to.r][3] = null; }
+      } else if (ep) {
+        board[to.r][to.c] = null;
+        board[from.r][to.c] = captured;
+      }
+
+      turn = turn === 'w' ? 'b' : 'w';
+      castlingRights = prevCastlingRights;
+      enPassantTarget = prevEP;
+      halfmoveClock = prevHalfmove;
+
+      selectedSquare = null;
+      validMoves = [];
+
+      if (initialTimeSec > 0 && moveHistory.length > 0) {
+        startTimer();
+      } else {
+        stopTimer();
+      }
+
+      updateBoardDOM();
+      renderHistoryTable();
+      saveGameState();
+    }
+
+    function resetGamePrompt() {
+      document.getElementById('reset-modal').classList.remove('hidden');
+    }
+    function closeResetModal() {
+      document.getElementById('reset-modal').classList.add('hidden');
+    }
+    function confirmResetGame() {
+      closeResetModal();
+      localStorage.removeItem('chess_saved_game');
+      resetGame();
+    }
+    function resetGame() {
+      isAnimating = false;
+      isPromoting = false;
+      initBoardState();
+      updateBoardDOM();
+      renderHistoryTable();
+      disableReplayControls();
+      updateScoreboardDOM();
+    }
+
+    function toggleBoardFlip() {
+      isFlipped = !isFlipped;
+      updateBoardDOM();
+    }
+
+    // 盤面拡大（対面）モード切り替え関数
+    function toggleBoardFocusMode() {
+      isBoardFocusMode = !isBoardFocusMode;
+      const header = document.getElementById('main-header');
+      const sidebar = document.getElementById('sidebar-section');
+      const flipBtn = document.getElementById('flip-board-btn');
+      const mainContent = document.getElementById('main-content');
+      const boardSection = document.getElementById('board-section');
+      const boardOuter = document.getElementById('board-outer');
+      const statusBar = document.getElementById('status-bar');
+      const boardControls = document.getElementById('board-controls');
+
+      const focusBlackBar = document.getElementById('focus-black-bar');
+      const focusWhiteBar = document.getElementById('focus-white-bar');
+      const materialBar = document.getElementById('material-bar-container');
+
+      if (isBoardFocusMode) {
+        if (header) header.classList.add('hidden');
+        if (sidebar) sidebar.classList.add('hidden');
+        if (flipBtn) flipBtn.classList.add('hidden');
+        if (statusBar) statusBar.classList.add('hidden');
+        
+        // ▼ ここを style.display = 'none' に変更
+        if (materialBar) materialBar.style.display = 'none';
+
+        if (initialTimeSec > 0) {
+          if (focusBlackBar) focusBlackBar.classList.remove('hidden');
+          if (focusWhiteBar) focusWhiteBar.classList.remove('hidden');
+        }
+
+        mainContent.className = 'flex-1 w-full h-screen p-3 flex flex-col items-center justify-center bg-slate-900 overflow-hidden';
+        boardSection.className = 'flex flex-col items-center justify-center w-full h-full max-w-[min(94vw,80vh)]';
+        boardOuter.className = 'relative w-full aspect-square bg-slate-800 p-2.5 rounded-2xl border border-slate-700 shadow-2xl transition-all duration-200';
+        boardControls.className = 'w-full mt-2 flex items-center justify-center gap-2';
+      } else {
+        if (header) header.classList.remove('hidden');
+        if (sidebar) sidebar.classList.remove('hidden');
+        if (flipBtn) flipBtn.classList.remove('hidden');
+        if (statusBar) statusBar.classList.remove('hidden');
+        
+        // ▼ ここを style.display = '' に変更（元の表示に戻す）
+        if (materialBar) materialBar.style.display = '';
+
+        if (focusBlackBar) focusBlackBar.classList.add('hidden');
+        if (focusWhiteBar) focusWhiteBar.classList.add('hidden');
+
+        mainContent.className = 'flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start';
+        boardSection.className = 'lg:col-span-2 flex flex-col items-center justify-center w-full';
+        boardOuter.className = 'relative w-full max-w-[560px] aspect-square bg-slate-300 p-2 rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center';
+        boardControls.className = 'w-full max-w-[560px] mt-3 flex items-center justify-between gap-2';
+      }
+      setTimeout(() => {
+        updateBoardDOM();
+      }, 50);
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          setTimeout(updateBoardDOM, 100);
+        }).catch(err => showCustomAlert(`全画面表示エラー: ${err.message}`));
+      } else {
+        document.exitFullscreen().then(() => {
+          setTimeout(updateBoardDOM, 100);
+        });
+      }
+    }
+    document.addEventListener('fullscreenchange', () => {
+      const btnText = document.getElementById('fullscreen-btn-text');
+      if (document.fullscreenElement) {
+        if (btnText) btnText.textContent = '全画面解除';
+      } else {
+        if (btnText) btnText.textContent = '全画面';
+      }
+      setTimeout(updateBoardDOM, 100);
+    });
+
+    function enableReplayControls() {
+      const btns = document.getElementById('replay-buttons');
+      const slider = document.getElementById('replay-slider');
+      const text = document.getElementById('replay-status-text');
+
+      if (btns) btns.classList.remove('opacity-50', 'pointer-events-none');
+      if (slider) {
+        slider.classList.remove('opacity-50', 'cursor-not-allowed');
+        slider.disabled = false;
+        slider.max = moveHistory.length - 1;
+        slider.value = moveHistory.length - 1;
+      }
+      if (text) text.textContent = '対局終了：過去局面の再現が可能です';
+    }
+
+    function disableReplayControls() {
+      const btns = document.getElementById('replay-buttons');
+      const slider = document.getElementById('replay-slider');
+      const text = document.getElementById('replay-status-text');
+
+      if (btns) btns.classList.add('opacity-50', 'pointer-events-none');
+      if (slider) {
+        slider.classList.add('opacity-50', 'cursor-not-allowed');
+        slider.disabled = true;
+        slider.value = 0;
+      }
+      if (text) text.textContent = '対局中：終局後にリプレイが利用できます';
+    }
+
+    function jumpToReplayIndex(idx) {
+      if (idx < -1 || idx >= moveHistory.length) return;
+      replayIndex = idx;
+      const slider = document.getElementById('replay-slider');
+      if (slider) slider.value = idx;
+      updateBoardDOM();
+      renderHistoryTable();
+    }
+
+    function stepReplay(dir) {
+      if (moveHistory.length === 0) return;
+      let target = replayIndex + dir;
+      if (target < -1) target = -1;
+      if (target >= moveHistory.length) target = moveHistory.length - 1;
+      jumpToReplayIndex(target);
+    }
+
+    function toggleReplayAuto() {
+      if (isReplaying) stopReplayAuto();
+      else startReplayAuto();
+    }
+
+    function startReplayAuto() {
+      if (moveHistory.length === 0) return;
+      isReplaying = true;
+      const playBtn = document.getElementById('replay-play-btn');
+      if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+      if (replayIndex >= moveHistory.length - 1) replayIndex = -1;
+
+      replayTimer = setInterval(() => {
+        if (replayIndex < moveHistory.length - 1) {
+          jumpToReplayIndex(replayIndex + 1);
+        } else {
+          stopReplayAuto();
+        }
+      }, 1000);
+    }
+
+    function stopReplayAuto() {
+      isReplaying = false;
+      if (replayTimer) clearInterval(replayTimer);
+      const playBtn = document.getElementById('replay-play-btn');
+      if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
+    }
+
+    function generatePGN() {
+      let pgn = '[Event "Casual Game"]\n';
+      pgn += '[Site "Local Chess App"]\n';
+      pgn += `[Date "${new Date().toISOString().slice(0, 10).replace(/-/g, '.')}"]\n`;
+      pgn += '[White "White"]\n';
+      pgn += '[Black "Black"]\n';
+      
+      let result = '*';
+      if (moveHistory.length > 0) {
+        const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+        if (legalMoves.length === 0) {
+          result = isInCheck(board, turn) ? (turn === 'w' ? '0-1' : '1-0') : '1/2-1/2';
+        } else if (positionHistory[getPositionKey()] >= 3 || halfmoveClock >= 100 || isDeadPosition(board)) {
+          result = '1/2-1/2';
+        }
+      }
+      pgn += `[Result "${result}"]\n\n`;
+
+      for (let i = 0; i < moveHistory.length; i++) {
+        if (i % 2 === 0) {
+          pgn += `${Math.floor(i / 2) + 1}. `;
+        }
+        pgn += moveHistory[i].san + ' ';
+      }
+      if (result !== '*') pgn += result;
+      return pgn.trim();
+    }
+
+    function parsePGNMoves(pgnText) {
+      let clean = pgnText.replace(/\[.*?\]/g, '').replace(/\{.*?\}/g, '').replace(/;.*$/gm, '');
+      const tokens = clean.split(/\s+/).filter(t => t.length > 0);
+      const sanMoves = [];
+
+      for (const token of tokens) {
+        if (/^\d+\.+$/.test(token)) continue;
+        if (/^\d+\./.test(token)) {
+          const movePart = token.replace(/^\d+\.+/, '');
+          if (movePart) sanMoves.push(movePart);
+          continue;
+        }
+        if (['1-0', '0-1', '1/2-1/2', '*'].includes(token)) continue;
+        sanMoves.push(token);
+      }
+      return sanMoves;
+    }
+
+    function openRuleModal() { document.getElementById('rule-modal').classList.remove('hidden'); }
+    function closeRuleModal() { document.getElementById('rule-modal').classList.add('hidden'); }
+
+    function openPieceRulesModal() { document.getElementById('piece-rules-modal').classList.remove('hidden'); }
+    function closePieceRulesModal() { document.getElementById('piece-rules-modal').classList.add('hidden'); }
+
+    function openDataModal() {
+      document.getElementById('data-textarea').value = generatePGN();
+      document.getElementById('data-modal').classList.remove('hidden');
+    }
+    function closeDataModal() { document.getElementById('data-modal').classList.add('hidden'); }
+
+    function copyGameData() {
+      const textarea = document.getElementById('data-textarea');
+      textarea.select();
+      document.execCommand('copy');
+      showCustomAlert('PGNデータをクリップボードにコピーしました！');
+    }
+
+    function loadGameData() {
+      if (isAnimating || isPromoting) return;
+      try {
+        const text = document.getElementById('data-textarea').value.trim();
+        const sanList = parsePGNMoves(text);
+        if (sanList.length > 0) {
+          initBoardState();
+          
+          for (let i = 0; i < sanList.length; i++) {
+            const san = sanList[i];
+            const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+            
+            const matchedMove = legalMoves.find(m => {
+              const movingPiece = board[m.from.r][m.from.c];
+              const capturedPiece = m.isEnPassant ? board[m.from.r][m.to.c] : board[m.to.r][m.to.c];
+              return formatSAN(m, movingPiece, capturedPiece, 'q') === san || 
+                     formatSAN(m, movingPiece, capturedPiece, 'r') === san ||
+                     formatSAN(m, movingPiece, capturedPiece, 'b') === san ||
+                     formatSAN(m, movingPiece, capturedPiece, 'n') === san;
+            });
+
+            if (matchedMove) {
+              const promoMatch = san.match(/=([QRBN])/);
+              const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : null;
+              executeMove(matchedMove, promoChoice);
+            } else {
+              throw new Error(`${i + 1}手目の指し手 ("${san}") 解析に失敗したか無効な手です。`);
+            }
+          }
+
+          selectedSquare = null;
+          validMoves = [];
+          replayIndex = -1;
+          
+          closeDataModal();
+          updateBoardDOM();
+          renderHistoryTable();
+          if (moveHistory.length > 0) enableReplayControls();
+        } else {
+          showCustomAlert('有効なPGN指し手が見つかりませんでした。テキスト形式を確認してください。');
+        }
+      } catch (e) {
+        showCustomAlert('PGNデータの読み込みに失敗しました: ' + e.message);
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      updateBoardDOM();
+    });
+
+    window.onload = function() {
+      initPWAAndOffline();
+      createBoardDOM();
+
+      if (!loadGameState()) {
+        initBoardState();
+      }
+
+      updateBoardDOM();
+      renderHistoryTable();
+      updateScoreboardDOM(); // ← ここを追加！
+    };
+  </script>
+</body>
+</html>
