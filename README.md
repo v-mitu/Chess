@@ -1,4 +1,4 @@
-# ♔ Responsive Web Chess App
+# ♔Web Chess App
 
 HTML, CSS (Tailwind CSS), および JavaScript のみで構築された、モバイル・レスポンシブ対応のWebベースのチェスアプリケーションです。  
 外部ライブラリを最小限に抑え、1ファイルの軽量設計でありながら、タイマー機能、PWA対応、PGNデータ入出力、音効・アニメーションなど豊富な機能を備えています。
