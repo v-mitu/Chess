@@ -242,7 +242,7 @@
         <!-- 上部：黒プレイヤータイマー（拡大時表示） -->
         <div id="focus-black-bar" class="hidden w-full flex items-center justify-between px-4 py-2 bg-slate-800 text-white rounded-xl border border-slate-700 shadow-md">
           <span class="text-xs font-semibold text-slate-300 flex items-center gap-1.5 rotate-180-fixed"><i class="fa-solid fa-user-ninja"></i> 黒プレイヤー</span>
-          <span id="focus-timer-black" class="font-mono text-base font-bold text-ghostwhite-400 rotate-180-fixed">05:00</span>
+          <span id="focus-timer-black" class="font-mono text-base font-bold text-slate-300 rotate-180-fixed">05:00</span>
         </div>
 
         <!-- チェス盤 ＆ 横のマテリアルバーを収めるコンテナ -->
@@ -279,8 +279,7 @@
         <div id="focus-white-bar" class="hidden w-full flex items-center justify-between px-4 py-2 bg-white text-slate-800 rounded-xl border border-slate-200 shadow-md">
           <div class="flex items-center gap-2">
             <span class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fa-regular fa-user"></i> 白プレイヤー</span>
-            <span id="focus-timer-white" class="font-mono text-base font-bold text-ghostwhite-600">05:00</span>
-          </div>
+            <span id="focus-timer-white" class="font-mono text-base font-bold text-slate-700 dark:text-slate-200">05:00</span>          </div>
           <button id="exit-focus-btn" onclick="toggleBoardFocusMode()" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1 border border-slate-200 shadow-sm">
             <i class="fa-solid fa-down-left-and-up-right-to-center text-xs"></i>
             <span>拡大解除</span>
@@ -1280,97 +1279,171 @@ function updateMaterialBar() {
       updateBoardDOM();
     }
 
-    function animateAndExecuteMove(moveObj, promoChoice = null) {
-      if (isAnimating) return;
-      isAnimating = true;
+    // 修正前後の該当関数全体を置き換えます
+function animateAndExecuteMove(moveObj, promoChoice = null) {
+  if (isAnimating) return;
+  isAnimating = true;
 
-      const { from, to } = moveObj;
-      const boardContainer = document.getElementById('board-container');
-      const piece = board[from.r][from.c];
+  const { from, to, isCastling } = moveObj;
+  const boardContainer = document.getElementById('board-container');
+  const piece = board[from.r][from.c];
 
-      if (!piece || !boardContainer) {
-        executeMove(moveObj, promoChoice);
-        isAnimating = false;
-        return;
-      }
+  if (!piece || !boardContainer) {
+    executeMove(moveObj, promoChoice);
+    isAnimating = false;
+    return;
+  }
 
-      const displayFromR = isFlipped ? 7 - from.r : from.r;
-      const displayFromC = isFlipped ? 7 - from.c : from.c;
-      const displayToR = isFlipped ? 7 - to.r : to.r;
-      const displayToC = isFlipped ? 7 - to.c : to.c;
+  // --- キング用の座標計算 ---
+  const displayFromR = isFlipped ? 7 - from.r : from.r;
+  const displayFromC = isFlipped ? 7 - from.c : from.c;
+  const displayToR = isFlipped ? 7 - to.r : to.r;
+  const displayToC = isFlipped ? 7 - to.c : to.c;
 
-      const fromIdx = displayFromR * 8 + displayFromC;
-      const fromDom = squareDOMCache[fromIdx];
+  const fromIdx = displayFromR * 8 + displayFromC;
+  const fromDom = squareDOMCache[fromIdx];
 
-      const rect = boardContainer.getBoundingClientRect();
-      const sqSize = rect.width / 8;
+  const rect = boardContainer.getBoundingClientRect();
+  const sqSize = rect.width / 8;
 
-      let floater = document.getElementById('floating-piece');
-      let floaterInner = document.getElementById('floating-piece-inner');
-      if (!floater) {
-        floater = document.createElement('div');
-        floater.id = 'floating-piece';
-        floaterInner = document.createElement('span');
-        floaterInner.id = 'floating-piece-inner';
-        floater.appendChild(floaterInner);
-        boardContainer.appendChild(floater);
-      }
+  // キングのフローティング要素
+  let floater = document.getElementById('floating-piece');
+  let floaterInner = document.getElementById('floating-piece-inner');
+  if (!floater) {
+    floater = document.createElement('div');
+    floater.id = 'floating-piece';
+    floaterInner = document.createElement('span');
+    floaterInner.id = 'floating-piece-inner';
+    floater.appendChild(floaterInner);
+    boardContainer.appendChild(floater);
+  }
 
-      const startX = displayFromC * sqSize;
-      const startY = displayFromR * sqSize;
-      const endX = displayToC * sqSize;
-      const endY = displayToR * sqSize;
+  const startX = displayFromC * sqSize;
+  const startY = displayFromR * sqSize;
+  const endX = displayToC * sqSize;
+  const endY = displayToR * sqSize;
 
-      const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
-      const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
-      const rotateClass = isRotated ? 'rotate-180-fixed' : '';
+  const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
+  const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
+  const rotateClass = isRotated ? 'rotate-180-fixed' : '';
 
-      floater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
-      floater.style.width = `${sqSize}px`;
-      floater.style.height = `${sqSize}px`;
+  floater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
+  floater.style.width = `${sqSize}px`;
+  floater.style.height = `${sqSize}px`;
 
-      let fontSize = `${sqSize * 0.75}px`;
-      if (fromDom && fromDom.pieceSpan) {
-        const comp = window.getComputedStyle(fromDom.pieceSpan);
-        if (comp.fontSize && comp.fontSize !== '0px') fontSize = comp.fontSize;
-      }
+  let fontSize = `${sqSize * 0.75}px`;
+  if (fromDom && fromDom.pieceSpan) {
+    const comp = window.getComputedStyle(fromDom.pieceSpan);
+    if (comp.fontSize && comp.fontSize !== '0px') fontSize = comp.fontSize;
+  }
 
-      floaterInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
-      floaterInner.style.fontSize = fontSize;
-      floaterInner.textContent = getPieceUnicode(piece.t, piece.c);
+  floaterInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
+  floaterInner.style.fontSize = fontSize;
+  floaterInner.textContent = getPieceUnicode(piece.t, piece.c);
 
-      if (fromDom && fromDom.pieceSpan) {
-        fromDom.pieceSpan.style.opacity = '0';
-      }
+  if (fromDom && fromDom.pieceSpan) {
+    fromDom.pieceSpan.style.opacity = '0';
+  }
 
-      floater.style.transition = 'none';
-      floater.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
-      floater.style.display = 'flex';
+  floater.style.transition = 'none';
+  floater.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
+  floater.style.display = 'flex';
 
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          const dx = endX - startX;
-          const dy = endY - startY;
-          const dist = Math.hypot(dx, dy);
-          const duration = Math.min(260, Math.max(160, Math.round(dist * 0.4)));
+  // --- キャスリング時のルーク用アニメーション設定 ---
+  let rookFloater = null;
+  let rookFromDom = null;
+  let rookStartX = 0, rookStartY = 0, rookEndX = 0, rookEndY = 0;
 
-          floater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
-          floater.style.transform = `translate3d(${endX}px, ${endY}px, 0)`;
-
-          setTimeout(() => {
-            executeMove(moveObj, promoChoice);
-
-            requestAnimationFrame(() => {
-              floater.style.display = 'none';
-              if (fromDom && fromDom.pieceSpan) {
-                fromDom.pieceSpan.style.opacity = '1';
-              }
-              isAnimating = false;
-            });
-          }, duration);
-        });
-      });
+  if (isCastling) {
+    let rFromC, rToC;
+    if (to.c === 6) { // キングサイド
+      rFromC = 7; rToC = 5;
+    } else if (to.c === 2) { // クイーンサイド
+      rFromC = 0; rToC = 3;
     }
+    const rRow = from.r;
+    const rookPiece = board[rRow][rFromC];
+
+    if (rookPiece) {
+      const dispRookFromR = isFlipped ? 7 - rRow : rRow;
+      const dispRookFromC = isFlipped ? 7 - rFromC : rFromC;
+      const dispRookToR = isFlipped ? 7 - rRow : rRow;
+      const dispRookToC = isFlipped ? 7 - rToC : rToC;
+
+      const rookFromIdx = dispRookFromR * 8 + dispRookFromC;
+      rookFromDom = squareDOMCache[rookFromIdx];
+
+      rookFloater = document.getElementById('floating-rook');
+      if (!rookFloater) {
+        rookFloater = document.createElement('div');
+        rookFloater.id = 'floating-rook';
+        const rookInner = document.createElement('span');
+        rookInner.id = 'floating-rook-inner';
+        rookFloater.appendChild(rookInner);
+        boardContainer.appendChild(rookFloater);
+      }
+      const rookInner = document.getElementById('floating-rook-inner');
+      rookInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
+      rookInner.style.fontSize = fontSize;
+      rookInner.textContent = getPieceUnicode(rookPiece.t, rookPiece.c);
+
+      rookStartX = dispRookFromC * sqSize;
+      rookStartY = dispRookFromR * sqSize;
+      rookEndX = dispRookToC * sqSize;
+      rookEndY = dispRookToR * sqSize;
+
+      rookFloater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
+      rookFloater.style.width = `${sqSize}px`;
+      rookFloater.style.height = `${sqSize}px`;
+      rookFloater.style.transition = 'none';
+      rookFloater.style.transform = `translate3d(${rookStartX}px, ${rookStartY}px, 0)`;
+      rookFloater.style.display = 'flex';
+
+      if (rookFromDom && rookFromDom.pieceSpan) {
+        rookFromDom.pieceSpan.style.opacity = '0';
+      }
+    }
+  }
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const dist = Math.hypot(dx, dy);
+      const duration = Math.min(260, Math.max(160, Math.round(dist * 0.4)));
+
+      // キングのスライド
+      floater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+      floater.style.transform = `translate3d(${endX}px, ${endY}px, 0)`;
+
+      // ルークのスライド
+      if (rookFloater) {
+        rookFloater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+        rookFloater.style.transform = `translate3d(${rookEndX}px, ${rookEndY}px, 0)`;
+      }
+
+      setTimeout(() => {
+        executeMove(moveObj, promoChoice);
+
+        requestAnimationFrame(() => {
+          floater.style.display = 'none';
+          if (fromDom && fromDom.pieceSpan) {
+            fromDom.pieceSpan.style.opacity = '1';
+          }
+
+          if (rookFloater) {
+            rookFloater.style.display = 'none';
+            if (rookFromDom && rookFromDom.pieceSpan) {
+              rookFromDom.pieceSpan.style.opacity = '1';
+            }
+          }
+
+          isAnimating = false;
+        });
+      }, duration);
+    });
+  });
+}
 
     function executeMove(moveObj, promoChoice = null) {
       const { from, to, isCastling, isEnPassant, isPromotion } = moveObj;
@@ -2199,7 +2272,10 @@ function updateMaterialBar() {
         if (statusBar) statusBar.classList.add('hidden');
         
         // ▼ ここを style.display = 'none' に変更
-        if (materialBar) materialBar.style.display = 'none';
+        if (materialBar) {
+          materialBar.classList.remove('sm:flex'); // 「画面サイズに応じてflex表示する」というクラスを外し
+          materialBar.classList.add('hidden');     // 「完全に隠す」というクラスを追加する
+        }
 
         if (initialTimeSec > 0) {
           if (focusBlackBar) focusBlackBar.classList.remove('hidden');
@@ -2217,7 +2293,10 @@ function updateMaterialBar() {
         if (statusBar) statusBar.classList.remove('hidden');
         
         // ▼ ここを style.display = '' に変更（元の表示に戻す）
-        if (materialBar) materialBar.style.display = '';
+        if (materialBar) {
+          materialBar.classList.remove('hidden');     // 「隠す」クラスを外し
+          materialBar.classList.add('sm:flex');       // もとの「画面サイズに応じてflex表示する」クラスに戻す
+        }
 
         if (focusBlackBar) focusBlackBar.classList.add('hidden');
         if (focusWhiteBar) focusWhiteBar.classList.add('hidden');
@@ -2368,7 +2447,7 @@ function updateMaterialBar() {
           continue;
         }
         if (['1-0', '0-1', '1/2-1/2', '*'].includes(token)) continue;
-        sanMoves.push(token);
+        sanMoves.push(token.replace(/[+#]/g, ''));
       }
       return sanMoves;
     }
@@ -2385,11 +2464,14 @@ function updateMaterialBar() {
     }
     function closeDataModal() { document.getElementById('data-modal').classList.add('hidden'); }
 
-    function copyGameData() {
+    async function copyGameData() {
       const textarea = document.getElementById('data-textarea');
-      textarea.select();
-      document.execCommand('copy');
-      showCustomAlert('PGNデータをクリップボードにコピーしました！');
+      try {
+        await navigator.clipboard.writeText(textarea.value);
+        showCustomAlert('PGNデータをクリップボードにコピーしました！');
+      } catch (err) {
+        showCustomAlert('コピーに失敗しました。');
+      }
     }
 
     function loadGameData() {
@@ -2404,21 +2486,23 @@ function updateMaterialBar() {
             const san = sanList[i];
             const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
             
+            const promoMatch = san.match(/=([QRBN])/);
+            const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : (matchedMove && matchedMove.isPromotion ? 'q' : null);
+
             const matchedMove = legalMoves.find(m => {
               const movingPiece = board[m.from.r][m.from.c];
               const capturedPiece = m.isEnPassant ? board[m.from.r][m.to.c] : board[m.to.r][m.to.c];
-              return formatSAN(m, movingPiece, capturedPiece, 'q') === san || 
-                     formatSAN(m, movingPiece, capturedPiece, 'r') === san ||
-                     formatSAN(m, movingPiece, capturedPiece, 'b') === san ||
-                     formatSAN(m, movingPiece, capturedPiece, 'n') === san;
+              // 実際に含まれている昇格文字（またはデフォルトのq）を使ってSANを生成・比較する
+              const pChoice = promoMatch ? promoMatch[1].toLowerCase() : 'q';
+              return formatSAN(m, movingPiece, capturedPiece, pChoice) === san ||
+                    formatSAN(m, movingPiece, capturedPiece, 'q') === san || 
+                    formatSAN(m, movingPiece, capturedPiece, 'r') === san ||
+                    formatSAN(m, movingPiece, capturedPiece, 'b') === san ||
+                    formatSAN(m, movingPiece, capturedPiece, 'n') === san;
             });
 
             if (matchedMove) {
-              const promoMatch = san.match(/=([QRBN])/);
-              const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : null;
               executeMove(matchedMove, promoChoice);
-            } else {
-              throw new Error(`${i + 1}手目の指し手 ("${san}") 解析に失敗したか無効な手です。`);
             }
           }
 
