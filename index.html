@@ -245,26 +245,27 @@
           <span id="focus-timer-black" class="font-mono text-base font-bold text-slate-300 rotate-180-fixed">05:00</span>
         </div>
 
-        <!-- チェス盤 ＆ 横のマテリアルバーを収めるコンテナ -->
-        <div class="flex items-center gap-2.5 w-full max-w-[560px] justify-center">
+        <!-- チェス盤 ＆ マテリアルバーを収めるコンテナ -->
+        <div class="flex flex-col-reverse sm:flex-row items-center gap-2.5 w-full max-w-[560px] justify-center">
           
-          <!-- ▼ マテリアルアドバンテージ・縦バー -->
-          <div id="material-bar-container" class="hidden sm:flex flex-col justify-between items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-1.5 h-[560px] max-h-[calc(94vw-2rem)] w-10 shadow-sm shrink-0">
-            <!-- 黒側のポイント差 -->
-            <div class="flex flex-col items-center gap-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-              <span class="font-bold"><i class="fa-solid fa-user-ninja"></i></span>
-              <span id="material-black-diff" class="font-mono font-bold text-slate-800 dark:text-white">0</span>
+          <!-- ▼ マテリアルアドバンテージバー（スマホ:横向き / PC:縦向き） -->
+          <div id="material-bar-container" class="flex flex-row sm:flex-col justify-between items-center bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 sm:py-3 sm:px-1.5 w-full sm:w-10 h-10 sm:h-[560px] shadow-sm shrink-0 transition-all">
+            
+            <!-- 黒側（スマホ:左 / PC:上 ※反転時は逆） -->
+            <div class="flex flex-row sm:flex-col items-center gap-1 sm:gap-0.5 text-[11px] sm:text-[10px] text-slate-500 dark:text-slate-400">
+              <span class="font-bold"><i id="mat-top-icon" class="fa-solid fa-user-ninja"></i></span>
+              <span id="mat-top-diff" class="font-mono font-bold text-slate-800 dark:text-white">0</span>
             </div>
             
-            <!-- 中央のバランスバー（白の優勢割合を高さで表現） -->
-            <div class="relative w-2.5 flex-1 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden my-2 flex flex-col justify-end">
-              <div id="material-fill-white" class="w-full bg-slate-100 dark:bg-slate-200 transition-all duration-300" style="height: 50%;"></div>
+            <!-- 中央のバランスバー（スマホ:横幅で表現 / PC:高さで表現） -->
+            <div id="mat-track" class="relative h-2.5 sm:h-auto flex-1 sm:w-2.5 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden mx-3 sm:mx-0 sm:my-2 flex flex-row sm:flex-col justify-end">
+              <div id="mat-fill" class="h-full sm:w-full bg-slate-100 dark:bg-slate-200 transition-all duration-300" style="width: 50%; height: 50%;"></div>
             </div>
 
-            <!-- 白側のポイント差 -->
-            <div class="flex flex-col items-center gap-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-              <span id="material-white-diff" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">0</span>
-              <span class="font-bold"><i class="fa-regular fa-user"></i></span>
+            <!-- 白側（スマホ:右 / PC:下 ※反転時は逆） -->
+            <div class="flex flex-row sm:flex-col items-center gap-1 sm:gap-0.5 text-[11px] sm:text-[10px] text-slate-500 dark:text-slate-400">
+              <span id="mat-bottom-diff" class="font-mono font-bold text-indigo-600 dark:text-indigo-400">0</span>
+              <span class="font-bold"><i id="mat-bottom-icon" class="fa-regular fa-user"></i></span>
             </div>
           </div>
 
@@ -962,47 +963,89 @@
 const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
 function updateMaterialBar() {
-  const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
-    ? moveHistory[replayIndex].boardState
-    : board;
+      const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
+        ? moveHistory[replayIndex].boardState
+        : board;
 
-  let whitePoints = 0;
-  let blackPoints = 0;
+      let whitePoints = 0;
+      let blackPoints = 0;
 
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
-      const piece = activeBoard[r][c];
-      if (piece) {
-        const val = pieceValues[piece.t] || 0;
-        if (piece.c === 'w') whitePoints += val;
-        else blackPoints += val;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const piece = activeBoard[r][c];
+          if (piece) {
+            const val = pieceValues[piece.t] || 0;
+            if (piece.c === 'w') whitePoints += val;
+            else blackPoints += val;
+          }
+        }
+      }
+
+      const diff = whitePoints - blackPoints;
+      const matTopIcon = document.getElementById('mat-top-icon');
+      const matBottomIcon = document.getElementById('mat-bottom-icon');
+      const matTopDiff = document.getElementById('mat-top-diff');
+      const matBottomDiff = document.getElementById('mat-bottom-diff');
+      const matTrack = document.getElementById('mat-track');
+      const matFill = document.getElementById('mat-fill');
+
+      const total = whitePoints + blackPoints;
+      let whitePercent = total > 0 ? (whitePoints / total) * 100 : 50;
+
+      // スマホ画面（横向きバー: 640px未満）かPC画面（縦向きバー: 640px以上）かを判定
+      const isMobile = window.innerWidth < 640;
+
+      if (isFlipped) {
+        // 黒視点（スマホ:左が白・右が黒 / PC:上が白・下が黒）
+        if (matTopIcon) matTopIcon.className = 'fa-regular fa-user';
+        if (matBottomIcon) matBottomIcon.className = 'fa-solid fa-user-ninja';
+
+        if (diff > 0) {
+          matTopDiff.textContent = `+${diff}`;
+          matBottomDiff.textContent = '';
+        } else if (diff < 0) {
+          matTopDiff.textContent = '';
+          matBottomDiff.textContent = `+${Math.abs(diff)}`;
+        } else {
+          matTopDiff.textContent = '0';
+          matBottomDiff.textContent = '0';
+        }
+
+        if (matTrack) {
+          matTrack.className = 'relative h-2.5 sm:h-auto flex-1 sm:w-2.5 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden mx-3 sm:mx-0 sm:my-2 flex flex-row sm:flex-col justify-start';
+        }
+      } else {
+        // 白視点（スマホ:左が黒・右が白 / PC:上が黒・下が白）
+        if (matTopIcon) matTopIcon.className = 'fa-solid fa-user-ninja';
+        if (matBottomIcon) matBottomIcon.className = 'fa-regular fa-user';
+
+        if (diff > 0) {
+          matTopDiff.textContent = '';
+          matBottomDiff.textContent = `+${diff}`;
+        } else if (diff < 0) {
+          matTopDiff.textContent = `+${Math.abs(diff)}`;
+          matBottomDiff.textContent = '';
+        } else {
+          matTopDiff.textContent = '0';
+          matBottomDiff.textContent = '0';
+        }
+
+        if (matTrack) {
+          matTrack.className = 'relative h-2.5 sm:h-auto flex-1 sm:w-2.5 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden mx-3 sm:mx-0 sm:my-2 flex flex-row sm:flex-col justify-end';
+        }
+      }
+
+      // 画面幅に応じて width と height を切り替え
+      if (matFill) {
+        if (isMobile) {
+          matFill.style.width = `${whitePercent}%`;
+          matFill.style.height = '100%';
+        } else {
+          matFill.style.width = '100%';
+          matFill.style.height = `${whitePercent}%`;
+        }
       }
     }
-  }
-
-  const diff = whitePoints - blackPoints;
-  const whiteDiffEl = document.getElementById('material-white-diff');
-  const blackDiffEl = document.getElementById('material-black-diff');
-  const fillWhiteEl = document.getElementById('material-fill-white');
-
-  if (whiteDiffEl && blackDiffEl && fillWhiteEl) {
-    if (diff > 0) {
-      whiteDiffEl.textContent = `+${diff}`;
-      blackDiffEl.textContent = '';
-    } else if (diff < 0) {
-      whiteDiffEl.textContent = '';
-      blackDiffEl.textContent = `+${Math.abs(diff)}`;
-    } else {
-      whiteDiffEl.textContent = '0';
-      blackDiffEl.textContent = '0';
-    }
-
-    // バーの高さを計算（合計点数に対する白の割合を反映）
-    const total = whitePoints + blackPoints;
-    let whitePercent = total > 0 ? (whitePoints / total) * 100 : 50;
-    fillWhiteEl.style.height = `${whitePercent}%`;
-  }
-}
 
     // --- テーマ切り替え ---
     function toggleTheme() {
