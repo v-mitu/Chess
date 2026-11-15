@@ -114,22 +114,22 @@
     }
 
     /* 手番インジケーターの強制カラー設定 */
-  #turn-indicator.turn-white {
-    background-color: #ffffff !important;
-    border-color: #64748b !important;
-  }
-  #turn-indicator.turn-black {
-    background-color: #0f172a !important;
-    border-color: #0f172a !important;
-  }
-  body.dark-mode #turn-indicator.turn-white {
-    background-color: #ffffff !important;
-    border-color: #cbd5e1 !important;
-  }
-  body.dark-mode #turn-indicator.turn-black {
-    background-color: #94a3b8 !important;
-    border-color: #e2e8f0 !important;
-  }
+    #turn-indicator.turn-white {
+      background-color: #ffffff !important;
+      border-color: #64748b !important;
+    }
+    #turn-indicator.turn-black {
+      background-color: #0f172a !important;
+      border-color: #0f172a !important;
+    }
+    body.dark-mode #turn-indicator.turn-white {
+      background-color: #ffffff !important;
+      border-color: #cbd5e1 !important;
+    }
+    body.dark-mode #turn-indicator.turn-black {
+      background-color: #94a3b8 !important;
+      border-color: #e2e8f0 !important;
+    }
 
     /* カスタムスクロールバー */
     ::-webkit-scrollbar {
@@ -155,9 +155,18 @@
     <div class="flex items-center gap-3">
       <span class="text-2xl">♔</span>
       <h1 class="text-xl font-bold tracking-tight text-slate-800">Chess</h1>
+      <span id="header-ai-badge" class="hidden px-2 py-0.5 text-xs font-bold bg-indigo-100 text-indigo-700 rounded-full border border-indigo-200">
+        <i class="fa-solid fa-robot mr-1"></i><span id="header-ai-level-text">AI Lv.5</span>
+      </span>
     </div>
     
     <div class="flex items-center gap-2 flex-wrap">
+      <!-- AI対戦設定ボタン（新規追加） -->
+      <button id="ai-mode-btn" onclick="openAiModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-robot text-xs"></i>
+        <span id="ai-btn-text">AI対戦: OFF</span>
+      </button>
+
       <button onclick="toggleTheme()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
         <i id="theme-btn-icon" class="fa-solid fa-moon text-xs"></i>
         <span id="theme-btn-text">ダーク</span>
@@ -178,7 +187,7 @@
         <span>ルール</span>
       </button>
       
-      <!-- 座標表示切り替えボタン（新規追加） -->
+      <!-- 座標表示切り替えボタン -->
       <button onclick="toggleCoordinates()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
         <i class="fa-solid fa-hashtag"></i>
         <span id="coord-btn-text">座標: ON</span>
@@ -204,11 +213,15 @@
       
       <!-- ステータス ＆ タイマー表示バー（通常モード） -->
       <div id="status-bar" class="w-full max-w-[560px] mb-3 flex flex-col gap-2 bg-white p-3 rounded-xl border border-slate-200 shadow-sm">
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between flex-wrap gap-1">
           <div class="flex items-center gap-2">
             <span id="turn-indicator" class="w-3.5 h-3.5 rounded-full inline-block border border-slate-400 bg-white"></span>
             <span id="game-status-text" class="text-base font-bold text-slate-800">白の手番です</span>
-            <span id="check-badge" class="hidden ml-2 px-2 py-0.5 bg-rose-500 text-white text-xs font-semibold rounded-full animate-pulse">CHECK</span>
+            <span id="check-badge" class="hidden ml-1 px-2 py-0.5 bg-rose-500 text-white text-xs font-semibold rounded-full animate-pulse">CHECK</span>
+            <span id="ai-thinking-badge" class="hidden ml-1 px-2.5 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full flex items-center gap-1.5">
+              <i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i>
+              <span>Stockfish 思考中...</span>
+            </span>
           </div>
           
           <div class="flex items-center gap-2">
@@ -221,7 +234,7 @@
 
         <div id="timer-display-bar" class="flex items-center justify-between gap-3 pt-2 border-t border-slate-100 text-sm font-semibold">
           <div id="black-timer-box" class="flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 transition-all duration-200">
-            <span class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-solid fa-user-ninja"></i> 黒</span>
+            <span id="timer-black-label" class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-solid fa-user-ninja"></i> 黒</span>
             <span id="timer-black-text" class="font-mono text-base font-bold text-slate-800">05:00</span>
           </div>
 
@@ -230,7 +243,7 @@
           </button>
 
           <div id="white-timer-box" class="flex-1 flex items-center justify-between px-3 py-1.5 bg-slate-100 rounded-lg border border-slate-200 transition-all duration-200">
-            <span class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-regular fa-user"></i> 白</span>
+            <span id="timer-white-label" class="text-xs text-slate-500 flex items-center gap-1"><i class="fa-regular fa-user"></i> 白</span>
             <span id="timer-white-text" class="font-mono text-base font-bold text-slate-800">05:00</span>
           </div>
         </div>
@@ -280,7 +293,8 @@
         <div id="focus-white-bar" class="hidden w-full flex items-center justify-between px-4 py-2 bg-white text-slate-800 rounded-xl border border-slate-200 shadow-md">
           <div class="flex items-center gap-2">
             <span class="text-xs font-semibold text-slate-500 flex items-center gap-1.5"><i class="fa-regular fa-user"></i> 白プレイヤー</span>
-            <span id="focus-timer-white" class="font-mono text-base font-bold text-slate-700 dark:text-slate-200">05:00</span>          </div>
+            <span id="focus-timer-white" class="font-mono text-base font-bold text-slate-700 dark:text-slate-200">05:00</span>
+          </div>
           <button id="exit-focus-btn" onclick="toggleBoardFocusMode()" class="px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1 border border-slate-200 shadow-sm">
             <i class="fa-solid fa-down-left-and-up-right-to-center text-xs"></i>
             <span>拡大解除</span>
@@ -360,14 +374,16 @@
             <i class="fa-solid fa-trophy text-amber-500"></i>
             <span>対戦スコアボード</span>
           </h3>
-          <button onclick="openNameModal()" class="px-2 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition flex items-center gap-1">
-            <i class="fa-solid fa-user-pen text-[10px]"></i>
-            <span>名前変更</span>
-          </button>
-          <button onclick="resetScoreboard()" class="px-2 py-1 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-md transition flex items-center gap-1">
-        <i class="fa-solid fa-rotate-left text-[10px]"></i>
-        <span>スコアリセット</span>
-      </button>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openNameModal()" class="px-2 py-1 text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition flex items-center gap-1">
+              <i class="fa-solid fa-user-pen text-[10px]"></i>
+              <span>名前変更</span>
+            </button>
+            <button onclick="resetScoreboard()" class="px-2 py-1 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-md transition flex items-center gap-1">
+              <i class="fa-solid fa-rotate-left text-[10px]"></i>
+              <span>スコアリセット</span>
+            </button>
+          </div>
         </div>
 
         <div class="grid grid-cols-3 gap-2 text-center">
@@ -389,6 +405,87 @@
   </main>
 
   <!-- モーダル群 -->
+
+  <!-- Stockfish AI対戦設定モーダル（新規追加） -->
+  <div id="ai-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-robot text-indigo-500"></i>
+          <span>Stockfish AI対戦設定</span>
+        </h3>
+        <button onclick="closeAiModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- エンジンステータス表示 -->
+      <div class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+        <span class="text-slate-500 font-medium">エンジン状態:</span>
+        <span id="sf-engine-status" class="font-bold text-indigo-600">Stockfish 準備中...</span>
+      </div>
+
+      <!-- 対戦モード選択 -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-slate-700">対戦モード</label>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="mode-pvp-btn" onclick="selectAiModalMode(false)" class="py-2.5 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-user-group"></i>
+            <span>対人戦 (2人)</span>
+          </button>
+          <button id="mode-ai-btn" onclick="selectAiModalMode(true)" class="py-2.5 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2">
+            <i class="fa-solid fa-robot"></i>
+            <span>Stockfish AI戦</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- AI詳細オプション（AI戦選択時に有効） -->
+      <div id="ai-options-box" class="flex flex-col gap-3 pt-1">
+        <!-- あなたの担当色 -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-bold text-slate-700">あなたの担当色</label>
+          <div class="grid grid-cols-2 gap-2">
+            <button id="side-white-btn" onclick="selectAiModalSide('w')" class="py-2 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2">
+              <span class="text-lg">♔</span>
+              <span>白（先手）</span>
+            </button>
+            <button id="side-black-btn" onclick="selectAiModalSide('b')" class="py-2 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2">
+              <span class="text-lg">♚</span>
+              <span>黒（後手）</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Stockfish 強さ（Skill Level） -->
+        <div class="flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <label class="text-xs font-bold text-slate-700">AIの強さ (Skill Level)</label>
+            <span id="ai-level-label" class="text-xs font-bold text-indigo-600">Lv.5 (中級 / 約1500)</span>
+          </div>
+          <div class="grid grid-cols-3 gap-1.5">
+            <button onclick="selectAiModalLevel(1)" data-lv="1" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.1 入門</button>
+            <button onclick="selectAiModalLevel(3)" data-lv="3" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.3 初級</button>
+            <button onclick="selectAiModalLevel(5)" data-lv="5" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.5 中級</button>
+            <button onclick="selectAiModalLevel(10)" data-lv="10" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.10 上級</button>
+            <button onclick="selectAiModalLevel(15)" data-lv="15" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.15 達人</button>
+            <button onclick="selectAiModalLevel(20)" data-lv="20" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.20 最強</button>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-400">※「設定を適用して新規対局」を押すと盤面がリセットされます。</p>
+
+      <div class="flex items-center gap-2 mt-1">
+        <button onclick="closeAiModal()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition">
+          キャンセル
+        </button>
+        <button onclick="applyAiSettings()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition shadow-sm">
+          適用して対局開始
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- タイマー設定モーダル -->
   <div id="timer-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
@@ -531,6 +628,10 @@
           <i class="fa-solid fa-chevron-right text-[10px]"></i>
         </button>
 
+        <div>
+          <h4 class="font-bold text-slate-800 text-sm mb-1">【Stockfish AI対戦】</h4>
+          <p>ヘッダーの「AI対戦」ボタンから、世界最強クラスのチェスエンジン Stockfish との対局を設定できます。あなたの担当色（白／黒）やAIの強さ（Lv.1〜Lv.20）を自由に選択できます。</p>
+        </div>
         <div>
           <h4 class="font-bold text-slate-800 text-sm mb-1">【基本操作】</h4>
           <p>自分の手番の駒をタップすると、移動可能なマスが半透明グレーの円で表示されます。移動先をタップすると駒が滑らかに移動します。</p>
@@ -704,8 +805,445 @@
     let incrementSec = 0;     // フィッシャー用の加算秒数、またはディレイの猶予秒数
     let currentDelayTime = 0; // ディレイ中の残り秒数（一時保持用）
 
+    // --- Stockfish AI 対戦設定・エンジン変数 ---
+    let aiEnabled = false;
+    let playerColor = 'w'; // 人間プレイヤーの色 ('w' または 'b')
+    let aiSkillLevel = 5;  // 0〜20
+    let isAiThinking = false;
+    let stockfishWorker = null;
+    let isStockfishReady = false;
+    let aiThinkTimeout = null;
+    let aiRequestToken = 0; // リセットやUndo時の古い応答破棄用
+
+    // モーダル内の一時選択状態
+    let modalAiEnabled = false;
+    let modalPlayerColor = 'w';
+    let modalAiLevel = 5;
+
     // DOM キャッシュ
     const squareDOMCache = [];
+
+    // --- Stockfish Web Worker 初期化 ---
+    async function initStockfishEngine() {
+      const statusEl = document.getElementById('sf-engine-status');
+      const cdnUrls = [
+        'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js',
+        'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js'
+      ];
+
+      for (const url of cdnUrls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const scriptText = await res.text();
+          const blob = new Blob([scriptText], { type: 'application/javascript' });
+          const blobUrl = URL.createObjectURL(blob);
+          const worker = new Worker(blobUrl);
+
+          worker.onmessage = function(e) {
+            const line = typeof e.data === 'string' ? e.data : String(e.data);
+            handleStockfishMessage(line);
+          };
+
+          worker.onerror = function() {
+            isStockfishReady = false;
+            if (statusEl) statusEl.textContent = '内蔵フォールバックAI待機中';
+          };
+
+          stockfishWorker = worker;
+          worker.postMessage('uci');
+          return;
+        } catch (err) {
+          // 次のCDNを試行
+        }
+      }
+
+      isStockfishReady = false;
+      if (statusEl) statusEl.textContent = '内蔵フォールバックAI待機中（オフライン）';
+    }
+
+    function handleStockfishMessage(line) {
+      const statusEl = document.getElementById('sf-engine-status');
+      if (line.includes('uciok')) {
+        stockfishWorker.postMessage('isready');
+      } else if (line.includes('readyok')) {
+        isStockfishReady = true;
+        if (statusEl) {
+          statusEl.textContent = 'Stockfish 10 準備完了 (Online)';
+          statusEl.className = 'font-bold text-emerald-600';
+        }
+        // すでにAIの手番で待機中だった場合は思考を開始
+        if (aiEnabled && !isGameOver && turn !== playerColor && !isAiThinking && replayIndex === -1) {
+          triggerAiMoveIfNeeded();
+        }
+      } else if (line.startsWith('bestmove')) {
+        const parts = line.split(/\s+/);
+        const uciMove = parts[1];
+        if (uciMove && uciMove !== '(none)') {
+          onStockfishBestMove(uciMove);
+        }
+      }
+    }
+
+    // 現在の盤面からFEN文字列を生成
+    function boardToFEN() {
+      let fen = '';
+      for (let r = 0; r < 8; r++) {
+        let empty = 0;
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (!p) {
+            empty++;
+          } else {
+            if (empty > 0) {
+              fen += empty;
+              empty = 0;
+            }
+            const char = p.c === 'w' ? p.t.toUpperCase() : p.t.toLowerCase();
+            fen += char;
+          }
+        }
+        if (empty > 0) fen += empty;
+        if (r < 7) fen += '/';
+      }
+
+      fen += ` ${turn} `;
+
+      let cStr = '';
+      if (castlingRights.wK) cStr += 'K';
+      if (castlingRights.wQ) cStr += 'Q';
+      if (castlingRights.bK) cStr += 'k';
+      if (castlingRights.bQ) cStr += 'q';
+      fen += (cStr || '-') + ' ';
+
+      if (enPassantTarget) {
+        const files = ['a','b','c','d','e','f','g','h'];
+        const ranks = ['8','7','6','5','4','3','2','1'];
+        fen += files[enPassantTarget.c] + ranks[enPassantTarget.r] + ' ';
+      } else {
+        fen += '- ';
+      }
+
+      const fullmove = Math.floor(moveHistory.length / 2) + 1;
+      fen += `${halfmoveClock} ${fullmove}`;
+      return fen;
+    }
+
+    // UCI指し手（例: "e2e4", "e7e8q"）を内部の moveObj に変換
+    function uciToMoveObj(uciStr) {
+      if (!uciStr || uciStr.length < 4) return null;
+      const files = ['a','b','c','d','e','f','g','h'];
+      const ranks = ['8','7','6','5','4','3','2','1'];
+
+      const fromC = files.indexOf(uciStr[0]);
+      const fromR = ranks.indexOf(uciStr[1]);
+      const toC = files.indexOf(uciStr[2]);
+      const toR = ranks.indexOf(uciStr[3]);
+      const promo = uciStr.length >= 5 ? uciStr[4].toLowerCase() : null;
+
+      if (fromC < 0 || fromR < 0 || toC < 0 || toR < 0) return null;
+
+      const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+      const matched = legalMoves.find(m => m.from.r === fromR && m.from.c === fromC && m.to.r === toR && m.to.c === toC);
+      if (!matched) return null;
+
+      return { moveObj: matched, promoChoice: matched.isPromotion ? (promo || 'q') : null };
+    }
+
+    // Stockfish に思考を依頼
+    function triggerAiMoveIfNeeded() {
+      if (!aiEnabled || isGameOver || isAnimating || isPromoting || replayIndex >= 0) return;
+      if (turn === playerColor) return;
+      if (isAiThinking) return;
+
+      const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+      if (legalMoves.length === 0) return;
+
+      isAiThinking = true;
+      aiRequestToken++;
+      const currentToken = aiRequestToken;
+      updateAiThinkingUI();
+
+      // レベルに応じた探索深さと思考時間（ms）
+      const depthMap = { 1: 1, 3: 3, 5: 6, 10: 10, 15: 14, 20: 18 };
+      const timeMap = { 1: 10, 3: 350, 5: 500, 10: 800, 15: 1200, 20: 1800 };
+      const depth = depthMap[aiSkillLevel] || Math.max(1, Math.round(aiSkillLevel * 0.9));
+      const moveTime = timeMap[aiSkillLevel] || 600;
+
+      if (stockfishWorker && isStockfishReady) {
+        const fen = boardToFEN();
+        stockfishWorker.postMessage(`setoption name Skill Level value ${aiSkillLevel}`);
+        stockfishWorker.postMessage(`position fen ${fen}`);
+        stockfishWorker.postMessage(`go depth ${depth} movetime ${moveTime}`);
+
+        // 万が一Workerが応答しない場合の安全タイムアウト
+        aiThinkTimeout = setTimeout(() => {
+          if (isAiThinking && currentToken === aiRequestToken) {
+            stockfishWorker.postMessage('stop');
+            executeFallbackAiMove(currentToken);
+          }
+        }, moveTime + 2500);
+      } else {
+        // CDN未読み込み・オフライン時の内蔵ミニマックス探索フォールバック
+        aiThinkTimeout = setTimeout(() => {
+          executeFallbackAiMove(currentToken);
+        }, 350);
+      }
+    }
+
+    function onStockfishBestMove(uciMove) {
+      if (aiThinkTimeout) {
+        clearTimeout(aiThinkTimeout);
+        aiThinkTimeout = null;
+      }
+      if (!isAiThinking || !aiEnabled || isGameOver || turn === playerColor || replayIndex >= 0) {
+        isAiThinking = false;
+        updateAiThinkingUI();
+        return;
+      }
+
+      const parsed = uciToMoveObj(uciMove);
+      isAiThinking = false;
+      updateAiThinkingUI();
+
+      if (parsed) {
+        animateAndExecuteMove(parsed.moveObj, parsed.promoChoice);
+      } else {
+        executeFallbackAiMove(aiRequestToken);
+      }
+    }
+
+    // オフライン時のフォールバックAI（2手先読み＋駒得評価）
+    function executeFallbackAiMove(token) {
+      if (token !== aiRequestToken || !aiEnabled || isGameOver || turn === playerColor || replayIndex >= 0) {
+        isAiThinking = false;
+        updateAiThinkingUI();
+        return;
+      }
+
+      const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
+      isAiThinking = false;
+      updateAiThinkingUI();
+
+      if (legalMoves.length === 0) return;
+
+      const aiColor = turn;
+      const oppColor = aiColor === 'w' ? 'b' : 'w';
+      let bestScore = -Infinity;
+      let bestMoves = [];
+
+      for (const m of legalMoves) {
+        const nextBd = cloneBoard(board);
+        nextBd[m.to.r][m.to.c] = nextBd[m.from.r][m.from.c];
+        nextBd[m.from.r][m.from.c] = null;
+        if (m.isEnPassant) nextBd[m.from.r][m.to.c] = null;
+        if (m.isPromotion) nextBd[m.to.r][m.to.c] = { t: 'q', c: aiColor };
+
+        // 1手先の簡易評価 + 相手の最善取り返し減点
+        let scoreVal = evaluateBoardSimple(nextBd, aiColor);
+        const oppMoves = getLegalMoves(nextBd, oppColor, castlingRights, null);
+        if (oppMoves.length === 0 && isInCheck(nextBd, oppColor)) {
+          scoreVal += 10000;
+        } else {
+          let worstReply = 0;
+          for (const om of oppMoves) {
+            const cap = nextBd[om.to.r][om.to.c];
+            if (cap) {
+              const val = pieceValues[cap.t] || 0;
+              if (val > worstReply) worstReply = val;
+            }
+          }
+          scoreVal -= worstReply * 0.8;
+        }
+
+        // レベルが低い場合はランダム性を混ぜる
+        const noise = (20 - aiSkillLevel) * 0.12 * (Math.random() - 0.5);
+        scoreVal += noise;
+
+        if (scoreVal > bestScore) {
+          bestScore = scoreVal;
+          bestMoves = [m];
+        } else if (Math.abs(scoreVal - bestScore) < 0.01) {
+          bestMoves.push(m);
+        }
+      }
+
+      const chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)] || legalMoves[0];
+      animateAndExecuteMove(chosen, chosen.isPromotion ? 'q' : null);
+    }
+
+    function evaluateBoardSimple(bd, color) {
+      let total = 0;
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = bd[r][c];
+          if (!p) continue;
+          const centerBonus = (3.5 - Math.abs(3.5 - c)) * 0.05 + (3.5 - Math.abs(3.5 - r)) * 0.05;
+          const val = (pieceValues[p.t] || 0) + centerBonus;
+          total += p.c === color ? val : -val;
+        }
+      }
+      return total;
+    }
+
+    function stopAiThinking() {
+      aiRequestToken++;
+      if (aiThinkTimeout) {
+        clearTimeout(aiThinkTimeout);
+        aiThinkTimeout = null;
+      }
+      if (isAiThinking && stockfishWorker && isStockfishReady) {
+        try { stockfishWorker.postMessage('stop'); } catch (e) {}
+      }
+      isAiThinking = false;
+      updateAiThinkingUI();
+    }
+
+    function updateAiThinkingUI() {
+      const badge = document.getElementById('ai-thinking-badge');
+      if (badge) {
+        if (isAiThinking && aiEnabled) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+      }
+    }
+
+    function updateAiHeaderAndLabels() {
+      const aiBtn = document.getElementById('ai-mode-btn');
+      const aiBtnText = document.getElementById('ai-btn-text');
+      const headerBadge = document.getElementById('header-ai-badge');
+      const headerLvText = document.getElementById('header-ai-level-text');
+      const bTimerLabel = document.getElementById('timer-black-label');
+      const wTimerLabel = document.getElementById('timer-white-label');
+
+      if (aiEnabled) {
+        if (aiBtn) aiBtn.className = 'px-3 py-1.5 text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition flex items-center gap-1.5 shadow-sm';
+        if (aiBtnText) aiBtnText.textContent = `AI対戦: Lv.${aiSkillLevel}`;
+        if (headerBadge) headerBadge.classList.remove('hidden');
+        if (headerLvText) headerLvText.textContent = `Stockfish Lv.${aiSkillLevel}`;
+
+        if (bTimerLabel) {
+          bTimerLabel.innerHTML = playerColor === 'b'
+            ? '<i class="fa-regular fa-user"></i> 黒 (あなた)'
+            : `<i class="fa-solid fa-robot text-indigo-500"></i> 黒 (AI Lv.${aiSkillLevel})`;
+        }
+        if (wTimerLabel) {
+          wTimerLabel.innerHTML = playerColor === 'w'
+            ? '<i class="fa-regular fa-user"></i> 白 (あなた)'
+            : `<i class="fa-solid fa-robot text-indigo-500"></i> 白 (AI Lv.${aiSkillLevel})`;
+        }
+      } else {
+        if (aiBtn) aiBtn.className = 'px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5';
+        if (aiBtnText) aiBtnText.textContent = 'AI対戦: OFF';
+        if (headerBadge) headerBadge.classList.add('hidden');
+        if (bTimerLabel) bTimerLabel.innerHTML = '<i class="fa-solid fa-user-ninja"></i> 黒';
+        if (wTimerLabel) wTimerLabel.innerHTML = '<i class="fa-regular fa-user"></i> 白';
+      }
+    }
+
+    // --- AI設定モーダル操作 ---
+    const aiLevelDescriptions = {
+      1: 'Lv.1 (入門 / 約800)',
+      3: 'Lv.3 (初級 / 約1150)',
+      5: 'Lv.5 (中級 / 約1500)',
+      10: 'Lv.10 (上級 / 約2000)',
+      15: 'Lv.15 (達人 / 約2500)',
+      20: 'Lv.20 (最強 / 約3000+)'
+    };
+
+    function openAiModal() {
+      modalAiEnabled = aiEnabled;
+      modalPlayerColor = playerColor;
+      modalAiLevel = aiSkillLevel;
+      refreshAiModalUI();
+      document.getElementById('ai-modal').classList.remove('hidden');
+    }
+
+    function closeAiModal() {
+      document.getElementById('ai-modal').classList.add('hidden');
+    }
+
+    function selectAiModalMode(enabled) {
+      modalAiEnabled = enabled;
+      refreshAiModalUI();
+    }
+
+    function selectAiModalSide(color) {
+      modalPlayerColor = color;
+      refreshAiModalUI();
+    }
+
+    function selectAiModalLevel(lv) {
+      modalAiLevel = lv;
+      refreshAiModalUI();
+    }
+
+    function refreshAiModalUI() {
+      const pvpBtn = document.getElementById('mode-pvp-btn');
+      const aiBtn = document.getElementById('mode-ai-btn');
+      const optionsBox = document.getElementById('ai-options-box');
+      const whiteBtn = document.getElementById('side-white-btn');
+      const blackBtn = document.getElementById('side-black-btn');
+      const lvLabel = document.getElementById('ai-level-label');
+
+      const activeClass = 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
+      const inactiveClass = 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200';
+
+      if (pvpBtn && aiBtn) {
+        pvpBtn.className = `py-2.5 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ${!modalAiEnabled ? activeClass : inactiveClass}`;
+        aiBtn.className = `py-2.5 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ${modalAiEnabled ? activeClass : inactiveClass}`;
+      }
+
+      if (optionsBox) {
+        if (modalAiEnabled) {
+          optionsBox.classList.remove('opacity-40', 'pointer-events-none');
+        } else {
+          optionsBox.classList.add('opacity-40', 'pointer-events-none');
+        }
+      }
+
+      if (whiteBtn && blackBtn) {
+        whiteBtn.className = `py-2 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ${modalPlayerColor === 'w' ? activeClass : inactiveClass}`;
+        blackBtn.className = `py-2 px-3 rounded-xl font-semibold text-sm border transition flex items-center justify-center gap-2 ${modalPlayerColor === 'b' ? activeClass : inactiveClass}`;
+      }
+
+      if (lvLabel) {
+        lvLabel.textContent = aiLevelDescriptions[modalAiLevel] || `Lv.${modalAiLevel}`;
+      }
+
+      document.querySelectorAll('.ai-lv-btn').forEach(btn => {
+        const lv = parseInt(btn.getAttribute('data-lv'), 10);
+        btn.className = `ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition ${lv === modalAiLevel ? activeClass : inactiveClass}`;
+      });
+    }
+
+    function applyAiSettings() {
+      aiEnabled = modalAiEnabled;
+      playerColor = modalPlayerColor;
+      aiSkillLevel = modalAiLevel;
+
+      if (aiEnabled) {
+        if (playerColor === 'w') {
+          playerNames.white = 'あなた';
+          playerNames.black = `Stockfish Lv.${aiSkillLevel}`;
+          isFlipped = false;
+        } else {
+          playerNames.white = `Stockfish Lv.${aiSkillLevel}`;
+          playerNames.black = 'あなた';
+          isFlipped = true;
+        }
+      } else {
+        if (playerNames.white.startsWith('Stockfish') || playerNames.white === 'あなた') {
+          playerNames.white = '白プレイヤー';
+        }
+        if (playerNames.black.startsWith('Stockfish') || playerNames.black === 'あなた') {
+          playerNames.black = '黒プレイヤー';
+        }
+      }
+
+      closeAiModal();
+      updateAiHeaderAndLabels();
+      resetGame();
+    }
 
     // --- PWA & Service Worker 動的登録 ---
     function initPWAAndOffline() {
@@ -784,6 +1322,7 @@
       if (bName) playerNames.black = bName;
       closeNameModal();
       updateScoreboardDOM();
+      saveGameState();
     }
 
     function updateScoreboardDOM() {
@@ -816,8 +1355,11 @@
         whiteTime,
         blackTime,
         isGameOver,
-        score,        // ← 追加！
-        playerNames   // ← 追加！
+        score,
+        playerNames,
+        aiEnabled,
+        playerColor,
+        aiSkillLevel
       };
       try {
         localStorage.setItem('chess_saved_game', JSON.stringify(state));
@@ -841,9 +1383,11 @@
           blackTime = state.blackTime !== undefined ? state.blackTime : initialTimeSec;
           isGameOver = state.isGameOver || false;
 
-          // ▼ 読み込み時にスコアとプレイヤー名も復元
           if (state.score) score = state.score;
           if (state.playerNames) playerNames = state.playerNames;
+          if (state.aiEnabled !== undefined) aiEnabled = state.aiEnabled;
+          if (state.playerColor) playerColor = state.playerColor;
+          if (state.aiSkillLevel !== undefined) aiSkillLevel = state.aiSkillLevel;
 
           if (moveHistory.length > 0 && !isGameOver && initialTimeSec > 0) {
             startTimer();
@@ -960,9 +1504,9 @@
     }
 
     // 駒の価値定義 (Pawn=1, Knight=3, Bishop=3, Rook=5, Queen=9)
-const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
+    const pieceValues = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
 
-function updateMaterialBar() {
+    function updateMaterialBar() {
       const activeBoard = (replayIndex >= 0 && replayIndex < moveHistory.length)
         ? moveHistory[replayIndex].boardState
         : board;
@@ -992,11 +1536,9 @@ function updateMaterialBar() {
       const total = whitePoints + blackPoints;
       let whitePercent = total > 0 ? (whitePoints / total) * 100 : 50;
 
-      // スマホ画面（横向きバー: 640px未満）かPC画面（縦向きバー: 640px以上）かを判定
       const isMobile = window.innerWidth < 640;
 
       if (isFlipped) {
-        // 黒視点（スマホ:左が白・右が黒 / PC:上が白・下が黒）
         if (matTopIcon) matTopIcon.className = 'fa-regular fa-user';
         if (matBottomIcon) matBottomIcon.className = 'fa-solid fa-user-ninja';
 
@@ -1015,7 +1557,6 @@ function updateMaterialBar() {
           matTrack.className = 'relative h-2.5 sm:h-auto flex-1 sm:w-2.5 bg-slate-800 dark:bg-slate-900 rounded-full overflow-hidden mx-3 sm:mx-0 sm:my-2 flex flex-row sm:flex-col justify-start';
         }
       } else {
-        // 白視点（スマホ:左が黒・右が白 / PC:上が黒・下が白）
         if (matTopIcon) matTopIcon.className = 'fa-solid fa-user-ninja';
         if (matBottomIcon) matBottomIcon.className = 'fa-regular fa-user';
 
@@ -1035,7 +1576,6 @@ function updateMaterialBar() {
         }
       }
 
-      // 画面幅に応じて width と height を切り替え
       if (matFill) {
         if (isMobile) {
           matFill.style.width = `${whitePercent}%`;
@@ -1078,6 +1618,7 @@ function updateMaterialBar() {
 
     // --- 初期化 ---
     function initBoardState() {
+      stopAiThinking();
       board = [
         [ {t:'r',c:'b'}, {t:'n',c:'b'}, {t:'b',c:'b'}, {t:'q',c:'b'}, {t:'k',c:'b'}, {t:'b',c:'b'}, {t:'n',c:'b'}, {t:'r',c:'b'} ],
         [ {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'}, {t:'p',c:'b'} ],
@@ -1186,20 +1727,16 @@ function updateMaterialBar() {
 
           dom.container.className = `relative flex items-center justify-center cursor-pointer transition-colors duration-75 ${bgClass}`;
 
-          // 古い座標ラベルを消去
           const oldLabels = dom.container.querySelectorAll('.coord-label');
           oldLabels.forEach(l => l.remove());
 
-          // 座標を表示する設定の場合のみ生成
           if (showCoordinates) {
-            // 一番下の行にファイル（a〜h）を表示
             if (displayR === 7) {
               const fileSpan = document.createElement('span');
               fileSpan.className = 'coord-label absolute bottom-0.5 right-1 text-[9px] md:text-[11px] font-bold select-none pointer-events-none opacity-80 z-0';
               fileSpan.textContent = files[c];
               dom.container.appendChild(fileSpan);
             }
-            // 一番左の列にランク（1〜8）を表示
             if (displayC === 0) {
               const rankSpan = document.createElement('span');
               rankSpan.className = 'coord-label absolute top-0.5 left-1 text-[9px] md:text-[11px] font-bold select-none pointer-events-none opacity-80 z-0';
@@ -1285,7 +1822,7 @@ function updateMaterialBar() {
     }
 
     function onSquareClickByIndex(idx) {
-      if (isAnimating || isPromoting || isGameOver) return;
+      if (isAnimating || isPromoting || isGameOver || isAiThinking) return;
       if (replayIndex >= 0) return;
 
       const dom = squareDOMCache[idx];
@@ -1293,7 +1830,10 @@ function updateMaterialBar() {
     }
 
     function onSquareClick(r, c) {
-      if (isAnimating || isPromoting || isGameOver) return;
+      if (isAnimating || isPromoting || isGameOver || isAiThinking) return;
+      // AI対戦中は人間の手番以外操作不可
+      if (aiEnabled && turn !== playerColor) return;
+
       getAudioContext();
       const piece = board[r][c];
 
@@ -1322,173 +1862,166 @@ function updateMaterialBar() {
       updateBoardDOM();
     }
 
-    // 修正前後の該当関数全体を置き換えます
-function animateAndExecuteMove(moveObj, promoChoice = null) {
-  if (isAnimating) return;
-  isAnimating = true;
+    function animateAndExecuteMove(moveObj, promoChoice = null) {
+      if (isAnimating) return;
+      isAnimating = true;
 
-  const { from, to, isCastling } = moveObj;
-  const boardContainer = document.getElementById('board-container');
-  const piece = board[from.r][from.c];
+      const { from, to, isCastling } = moveObj;
+      const boardContainer = document.getElementById('board-container');
+      const piece = board[from.r][from.c];
 
-  if (!piece || !boardContainer) {
-    executeMove(moveObj, promoChoice);
-    isAnimating = false;
-    return;
-  }
-
-  // --- キング用の座標計算 ---
-  const displayFromR = isFlipped ? 7 - from.r : from.r;
-  const displayFromC = isFlipped ? 7 - from.c : from.c;
-  const displayToR = isFlipped ? 7 - to.r : to.r;
-  const displayToC = isFlipped ? 7 - to.c : to.c;
-
-  const fromIdx = displayFromR * 8 + displayFromC;
-  const fromDom = squareDOMCache[fromIdx];
-
-  const rect = boardContainer.getBoundingClientRect();
-  const sqSize = rect.width / 8;
-
-  // キングのフローティング要素
-  let floater = document.getElementById('floating-piece');
-  let floaterInner = document.getElementById('floating-piece-inner');
-  if (!floater) {
-    floater = document.createElement('div');
-    floater.id = 'floating-piece';
-    floaterInner = document.createElement('span');
-    floaterInner.id = 'floating-piece-inner';
-    floater.appendChild(floaterInner);
-    boardContainer.appendChild(floater);
-  }
-
-  const startX = displayFromC * sqSize;
-  const startY = displayFromR * sqSize;
-  const endX = displayToC * sqSize;
-  const endY = displayToR * sqSize;
-
-  const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
-  const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
-  const rotateClass = isRotated ? 'rotate-180-fixed' : '';
-
-  floater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
-  floater.style.width = `${sqSize}px`;
-  floater.style.height = `${sqSize}px`;
-
-  let fontSize = `${sqSize * 0.75}px`;
-  if (fromDom && fromDom.pieceSpan) {
-    const comp = window.getComputedStyle(fromDom.pieceSpan);
-    if (comp.fontSize && comp.fontSize !== '0px') fontSize = comp.fontSize;
-  }
-
-  floaterInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
-  floaterInner.style.fontSize = fontSize;
-  floaterInner.textContent = getPieceUnicode(piece.t, piece.c);
-
-  if (fromDom && fromDom.pieceSpan) {
-    fromDom.pieceSpan.style.opacity = '0';
-  }
-
-  floater.style.transition = 'none';
-  floater.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
-  floater.style.display = 'flex';
-
-  // --- キャスリング時のルーク用アニメーション設定 ---
-  let rookFloater = null;
-  let rookFromDom = null;
-  let rookStartX = 0, rookStartY = 0, rookEndX = 0, rookEndY = 0;
-
-  if (isCastling) {
-    let rFromC, rToC;
-    if (to.c === 6) { // キングサイド
-      rFromC = 7; rToC = 5;
-    } else if (to.c === 2) { // クイーンサイド
-      rFromC = 0; rToC = 3;
-    }
-    const rRow = from.r;
-    const rookPiece = board[rRow][rFromC];
-
-    if (rookPiece) {
-      const dispRookFromR = isFlipped ? 7 - rRow : rRow;
-      const dispRookFromC = isFlipped ? 7 - rFromC : rFromC;
-      const dispRookToR = isFlipped ? 7 - rRow : rRow;
-      const dispRookToC = isFlipped ? 7 - rToC : rToC;
-
-      const rookFromIdx = dispRookFromR * 8 + dispRookFromC;
-      rookFromDom = squareDOMCache[rookFromIdx];
-
-      rookFloater = document.getElementById('floating-rook');
-      if (!rookFloater) {
-        rookFloater = document.createElement('div');
-        rookFloater.id = 'floating-rook';
-        const rookInner = document.createElement('span');
-        rookInner.id = 'floating-rook-inner';
-        rookFloater.appendChild(rookInner);
-        boardContainer.appendChild(rookFloater);
-      }
-      const rookInner = document.getElementById('floating-rook-inner');
-      rookInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
-      rookInner.style.fontSize = fontSize;
-      rookInner.textContent = getPieceUnicode(rookPiece.t, rookPiece.c);
-
-      rookStartX = dispRookFromC * sqSize;
-      rookStartY = dispRookFromR * sqSize;
-      rookEndX = dispRookToC * sqSize;
-      rookEndY = dispRookToR * sqSize;
-
-      rookFloater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
-      rookFloater.style.width = `${sqSize}px`;
-      rookFloater.style.height = `${sqSize}px`;
-      rookFloater.style.transition = 'none';
-      rookFloater.style.transform = `translate3d(${rookStartX}px, ${rookStartY}px, 0)`;
-      rookFloater.style.display = 'flex';
-
-      if (rookFromDom && rookFromDom.pieceSpan) {
-        rookFromDom.pieceSpan.style.opacity = '0';
-      }
-    }
-  }
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      const dx = endX - startX;
-      const dy = endY - startY;
-      const dist = Math.hypot(dx, dy);
-      const duration = Math.min(260, Math.max(160, Math.round(dist * 0.4)));
-
-      // キングのスライド
-      floater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
-      floater.style.transform = `translate3d(${endX}px, ${endY}px, 0)`;
-
-      // ルークのスライド
-      if (rookFloater) {
-        rookFloater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
-        rookFloater.style.transform = `translate3d(${rookEndX}px, ${rookEndY}px, 0)`;
-      }
-
-      setTimeout(() => {
+      if (!piece || !boardContainer) {
         executeMove(moveObj, promoChoice);
+        isAnimating = false;
+        return;
+      }
 
-        requestAnimationFrame(() => {
-          floater.style.display = 'none';
-          if (fromDom && fromDom.pieceSpan) {
-            fromDom.pieceSpan.style.opacity = '1';
+      const displayFromR = isFlipped ? 7 - from.r : from.r;
+      const displayFromC = isFlipped ? 7 - from.c : from.c;
+      const displayToR = isFlipped ? 7 - to.r : to.r;
+      const displayToC = isFlipped ? 7 - to.c : to.c;
+
+      const fromIdx = displayFromR * 8 + displayFromC;
+      const fromDom = squareDOMCache[fromIdx];
+
+      const rect = boardContainer.getBoundingClientRect();
+      const sqSize = rect.width / 8;
+
+      let floater = document.getElementById('floating-piece');
+      let floaterInner = document.getElementById('floating-piece-inner');
+      if (!floater) {
+        floater = document.createElement('div');
+        floater.id = 'floating-piece';
+        floaterInner = document.createElement('span');
+        floaterInner.id = 'floating-piece-inner';
+        floater.appendChild(floaterInner);
+        boardContainer.appendChild(floater);
+      }
+
+      const startX = displayFromC * sqSize;
+      const startY = displayFromR * sqSize;
+      const endX = displayToC * sqSize;
+      const endY = displayToR * sqSize;
+
+      const colorClass = piece.c === 'w' ? 'white-piece' : 'black-piece';
+      const isRotated = isBoardFocusMode && (piece.c === (isFlipped ? 'w' : 'b'));
+      const rotateClass = isRotated ? 'rotate-180-fixed' : '';
+
+      floater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
+      floater.style.width = `${sqSize}px`;
+      floater.style.height = `${sqSize}px`;
+
+      let fontSize = `${sqSize * 0.75}px`;
+      if (fromDom && fromDom.pieceSpan) {
+        const comp = window.getComputedStyle(fromDom.pieceSpan);
+        if (comp.fontSize && comp.fontSize !== '0px') fontSize = comp.fontSize;
+      }
+
+      floaterInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
+      floaterInner.style.fontSize = fontSize;
+      floaterInner.textContent = getPieceUnicode(piece.t, piece.c);
+
+      if (fromDom && fromDom.pieceSpan) {
+        fromDom.pieceSpan.style.opacity = '0';
+      }
+
+      floater.style.transition = 'none';
+      floater.style.transform = `translate3d(${startX}px, ${startY}px, 0)`;
+      floater.style.display = 'flex';
+
+      let rookFloater = null;
+      let rookFromDom = null;
+      let rookStartX = 0, rookStartY = 0, rookEndX = 0, rookEndY = 0;
+
+      if (isCastling) {
+        let rFromC, rToC;
+        if (to.c === 6) {
+          rFromC = 7; rToC = 5;
+        } else if (to.c === 2) {
+          rFromC = 0; rToC = 3;
+        }
+        const rRow = from.r;
+        const rookPiece = board[rRow][rFromC];
+
+        if (rookPiece) {
+          const dispRookFromR = isFlipped ? 7 - rRow : rRow;
+          const dispRookFromC = isFlipped ? 7 - rFromC : rFromC;
+          const dispRookToR = isFlipped ? 7 - rRow : rRow;
+          const dispRookToC = isFlipped ? 7 - rToC : rToC;
+
+          const rookFromIdx = dispRookFromR * 8 + dispRookFromC;
+          rookFromDom = squareDOMCache[rookFromIdx];
+
+          rookFloater = document.getElementById('floating-rook');
+          if (!rookFloater) {
+            rookFloater = document.createElement('div');
+            rookFloater.id = 'floating-rook';
+            const rookInner = document.createElement('span');
+            rookInner.id = 'floating-rook-inner';
+            rookFloater.appendChild(rookInner);
+            boardContainer.appendChild(rookFloater);
           }
+          const rookInner = document.getElementById('floating-rook-inner');
+          rookInner.className = `font-normal select-none leading-none ${colorClass} ${rotateClass}`;
+          rookInner.style.fontSize = fontSize;
+          rookInner.textContent = getPieceUnicode(rookPiece.t, rookPiece.c);
+
+          rookStartX = dispRookFromC * sqSize;
+          rookStartY = dispRookFromR * sqSize;
+          rookEndX = dispRookToC * sqSize;
+          rookEndY = dispRookToR * sqSize;
+
+          rookFloater.className = 'absolute pointer-events-none z-50 flex items-center justify-center';
+          rookFloater.style.width = `${sqSize}px`;
+          rookFloater.style.height = `${sqSize}px`;
+          rookFloater.style.transition = 'none';
+          rookFloater.style.transform = `translate3d(${rookStartX}px, ${rookStartY}px, 0)`;
+          rookFloater.style.display = 'flex';
+
+          if (rookFromDom && rookFromDom.pieceSpan) {
+            rookFromDom.pieceSpan.style.opacity = '0';
+          }
+        }
+      }
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          const dx = endX - startX;
+          const dy = endY - startY;
+          const dist = Math.hypot(dx, dy);
+          const duration = Math.min(260, Math.max(160, Math.round(dist * 0.4)));
+
+          floater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+          floater.style.transform = `translate3d(${endX}px, ${endY}px, 0)`;
 
           if (rookFloater) {
-            rookFloater.style.display = 'none';
-            if (rookFromDom && rookFromDom.pieceSpan) {
-              rookFromDom.pieceSpan.style.opacity = '1';
-            }
+            rookFloater.style.transition = `transform ${duration}ms cubic-bezier(0.2, 0.8, 0.2, 1)`;
+            rookFloater.style.transform = `translate3d(${rookEndX}px, ${rookEndY}px, 0)`;
           }
 
-          isAnimating = false;
-        });
-      }, duration);
-    });
-  });
-}
+          setTimeout(() => {
+            isAnimating = false;
+            executeMove(moveObj, promoChoice);
 
-    function executeMove(moveObj, promoChoice = null) {
+            requestAnimationFrame(() => {
+              floater.style.display = 'none';
+              if (fromDom && fromDom.pieceSpan) {
+                fromDom.pieceSpan.style.opacity = '1';
+              }
+
+              if (rookFloater) {
+                rookFloater.style.display = 'none';
+                if (rookFromDom && rookFromDom.pieceSpan) {
+                  rookFromDom.pieceSpan.style.opacity = '1';
+                }
+              }
+            });
+          }, duration);
+        });
+      });
+    }
+
+    function executeMove(moveObj, promoChoice = null, skipAiTrigger = false) {
       const { from, to, isCastling, isEnPassant, isPromotion } = moveObj;
       const movingPiece = board[from.r][from.c];
       const capturedPiece = isEnPassant ? board[from.r][to.c] : board[to.r][to.c];
@@ -1549,7 +2082,6 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       };
       moveHistory.push(moveRecord);
 
-      // --- フィッシャーモードの場合、直前に指したプレイヤーに時間を加算 ---
       if (timerMode === 'fisher' && incrementSec > 0) {
         if (turn === 'w') {
           whiteTime += incrementSec;
@@ -1576,8 +2108,13 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
         triggerVibration([30, 40, 30]);
       }
 
-      checkGameOverConditions();
+      const ended = checkGameOverConditions();
       saveGameState();
+
+      // AIの手番になった場合、Stockfishの思考を開始
+      if (!ended && !skipAiTrigger && aiEnabled && turn !== playerColor) {
+        setTimeout(() => triggerAiMoveIfNeeded(), 120);
+      }
     }
 
     // --- チェスタイマー管理機能 ---
@@ -1636,20 +2173,17 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       stopTimer();
       isTimerRunning = true;
 
-      // ディレイモードの場合、手番開始時にディレイ秒数をセット
       if (timerMode === 'delay') {
         currentDelayTime = incrementSec;
       }
 
       timerInterval = setInterval(() => {
-        // ディレイ中で、かつ猶予時間が残っている場合
         if (timerMode === 'delay' && currentDelayTime > 0) {
           currentDelayTime--;
           updateTimerDOM();
-          return; // タイマー本体の減算スキップ
+          return;
         }
 
-        // 通常のカウントダウン
         if (turn === 'w') {
           whiteTime--;
           if (whiteTime <= 0) {
@@ -1705,6 +2239,7 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
 
     function handleTimeout(loserColor) {
       stopTimer();
+      stopAiThinking();
       isGameOver = true;
       if (loserColor === 'w') {
         score.black++;
@@ -2058,22 +2593,19 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
 
       if (legalMoves.length === 0) {
         stopTimer();
+        stopAiThinking();
         isGameOver = true;
         if (inCheck) {
           const winner = turn === 'w' ? '黒' : '白';
-          console.log("チェックメイト検出！現在のターン：",turn);
-          // ▼ チェックメイト時のスコア加算
           if (turn === 'w') score.black++;
           else score.white++;
 
-          console.log("加算後のスコア:", score);
           showGameOverModal(`チェックメイト！ ${winner} (${playerNames[turn === 'w' ? 'black' : 'white']})の勝利です`);
         } else {
-          // ▼ ステイルメイト時のスコア加算
           score.draws++;
           showGameOverModal('ステイルメイト！ 引き分けです');
         }
-        updateScoreboardDOM(); // スコアボード更新
+        updateScoreboardDOM();
         saveGameState();
         enableReplayControls();
         return true;
@@ -2082,8 +2614,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       const posKey = getPositionKey();
       if (positionHistory[posKey] >= 3) {
         stopTimer();
+        stopAiThinking();
         isGameOver = true;
-        score.draws++; // ▼ 引き分けスコア加算
+        score.draws++;
         updateScoreboardDOM();
         saveGameState();
         showGameOverModal('スリーフォールド・レピティション！ 引き分けです');
@@ -2093,8 +2626,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
 
       if (halfmoveClock >= 100) {
         stopTimer();
+        stopAiThinking();
         isGameOver = true;
-        score.draws++; // ▼ 引き分けスコア加算
+        score.draws++;
         updateScoreboardDOM();
         saveGameState();
         showGameOverModal('50手ルール適用！ 引き分けです');
@@ -2104,8 +2638,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
 
       if (isDeadPosition(board)) {
         stopTimer();
+        stopAiThinking();
         isGameOver = true;
-        score.draws++; // ▼ 引き分けスコア加算
+        score.draws++;
         updateScoreboardDOM();
         saveGameState();
         showGameOverModal('デッド・ポジション！ メイト不可能なため引き分けです');
@@ -2126,18 +2661,10 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       document.getElementById('gameover-modal').classList.add('hidden');
     }
 
-    // スコアのみをリセットする関数
     function resetScoreboard() {
       score = { white: 0, black: 0, draws: 0 };
       updateScoreboardDOM();
       saveGameState();
-    }
-
-    function confirmResetGame() {
-      closeResetModal();
-      localStorage.removeItem('chess_saved_game');
-      score = { white: 0, black: 0, draws: 0 }; // ← スコアも初期化
-      resetGame();
     }
 
     function renderStatus() {
@@ -2158,12 +2685,11 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
         : turn;
 
       if (turnIndicator) {
-        // 一旦クラスをクリアして専用のクラスを付与
         turnIndicator.className = 'w-3.5 h-3.5 rounded-full inline-block border transition-colors duration-150';
         if (currentTurnColor === 'w') {
           turnIndicator.classList.add('turn-white');
           turnIndicator.classList.remove('turn-black');
-          turnIndicator.style.backgroundColor = '#ffffff'; // 直接指定も併用
+          turnIndicator.style.backgroundColor = '#ffffff';
         } else {
           turnIndicator.classList.add('turn-black');
           turnIndicator.classList.remove('turn-white');
@@ -2172,7 +2698,11 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       }
 
       if (statusText) {
-        statusText.textContent = `${activeTurn}の手番です`;
+        let suffix = '';
+        if (aiEnabled && replayIndex === -1 && !isGameOver) {
+          suffix = currentTurnColor === playerColor ? '（あなた）' : '（AI）';
+        }
+        statusText.textContent = `${activeTurn}の手番です${suffix}`;
         statusText.className = currentTheme === 'dark' ? 'text-base font-bold text-white' : 'text-base font-bold text-slate-800';
       }
       if (checkBadge) {
@@ -2218,12 +2748,7 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       if (container) container.scrollTop = container.scrollHeight;
     }
 
-    function undoMove() {
-      if (moveHistory.length === 0 || isAnimating || isPromoting) return;
-      stopReplayAuto();
-      replayIndex = -1;
-      isGameOver = false;
-
+    function popSingleMove() {
       if (moveHistory.length === 0) return;
       const currentKey = getPositionKey();
       if (positionHistory[currentKey]) {
@@ -2251,6 +2776,26 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       castlingRights = prevCastlingRights;
       enPassantTarget = prevEP;
       halfmoveClock = prevHalfmove;
+    }
+
+    function undoMove() {
+      if (moveHistory.length === 0 || isAnimating || isPromoting) return;
+      stopAiThinking();
+      stopReplayAuto();
+      replayIndex = -1;
+      isGameOver = false;
+
+      if (aiEnabled) {
+        // AI対戦時は自分の手番まで戻す（現在自分の手番ならAIの手+自分の手の2手分戻す）
+        if (turn === playerColor && moveHistory.length >= 2) {
+          popSingleMove();
+          popSingleMove();
+        } else {
+          popSingleMove();
+        }
+      } else {
+        popSingleMove();
+      }
 
       selectedSquare = null;
       validMoves = [];
@@ -2264,6 +2809,10 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       updateBoardDOM();
       renderHistoryTable();
       saveGameState();
+
+      if (aiEnabled && turn !== playerColor) {
+        setTimeout(() => triggerAiMoveIfNeeded(), 150);
+      }
     }
 
     function resetGamePrompt() {
@@ -2275,6 +2824,7 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
     function confirmResetGame() {
       closeResetModal();
       localStorage.removeItem('chess_saved_game');
+      score = { white: 0, black: 0, draws: 0 };
       resetGame();
     }
     function resetGame() {
@@ -2285,6 +2835,13 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       renderHistoryTable();
       disableReplayControls();
       updateScoreboardDOM();
+      updateAiHeaderAndLabels();
+      saveGameState();
+
+      // 人間が黒（後手）を選んだ場合、AI（白）の初手を開始
+      if (aiEnabled && turn !== playerColor) {
+        setTimeout(() => triggerAiMoveIfNeeded(), 250);
+      }
     }
 
     function toggleBoardFlip() {
@@ -2314,10 +2871,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
         if (flipBtn) flipBtn.classList.add('hidden');
         if (statusBar) statusBar.classList.add('hidden');
         
-        // ▼ ここを style.display = 'none' に変更
         if (materialBar) {
-          materialBar.classList.remove('sm:flex'); // 「画面サイズに応じてflex表示する」というクラスを外し
-          materialBar.classList.add('hidden');     // 「完全に隠す」というクラスを追加する
+          materialBar.classList.remove('sm:flex');
+          materialBar.classList.add('hidden');
         }
 
         if (initialTimeSec > 0) {
@@ -2335,10 +2891,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
         if (flipBtn) flipBtn.classList.remove('hidden');
         if (statusBar) statusBar.classList.remove('hidden');
         
-        // ▼ ここを style.display = '' に変更（元の表示に戻す）
         if (materialBar) {
-          materialBar.classList.remove('hidden');     // 「隠す」クラスを外し
-          materialBar.classList.add('sm:flex');       // もとの「画面サイズに応じてflex表示する」クラスに戻す
+          materialBar.classList.remove('hidden');
+          materialBar.classList.add('sm:flex');
         }
 
         if (focusBlackBar) focusBlackBar.classList.add('hidden');
@@ -2453,8 +3008,8 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
       let pgn = '[Event "Casual Game"]\n';
       pgn += '[Site "Local Chess App"]\n';
       pgn += `[Date "${new Date().toISOString().slice(0, 10).replace(/-/g, '.')}"]\n`;
-      pgn += '[White "White"]\n';
-      pgn += '[Black "Black"]\n';
+      pgn += `[White "${playerNames.white}"]\n`;
+      pgn += `[Black "${playerNames.black}"]\n`;
       
       let result = '*';
       if (moveHistory.length > 0) {
@@ -2528,14 +3083,11 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
           for (let i = 0; i < sanList.length; i++) {
             const san = sanList[i];
             const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
-            
             const promoMatch = san.match(/=([QRBN])/);
-            const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : (matchedMove && matchedMove.isPromotion ? 'q' : null);
 
             const matchedMove = legalMoves.find(m => {
               const movingPiece = board[m.from.r][m.from.c];
               const capturedPiece = m.isEnPassant ? board[m.from.r][m.to.c] : board[m.to.r][m.to.c];
-              // 実際に含まれている昇格文字（またはデフォルトのq）を使ってSANを生成・比較する
               const pChoice = promoMatch ? promoMatch[1].toLowerCase() : 'q';
               return formatSAN(m, movingPiece, capturedPiece, pChoice) === san ||
                     formatSAN(m, movingPiece, capturedPiece, 'q') === san || 
@@ -2545,7 +3097,8 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
             });
 
             if (matchedMove) {
-              executeMove(matchedMove, promoChoice);
+              const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : (matchedMove.isPromotion ? 'q' : null);
+              executeMove(matchedMove, promoChoice, true);
             }
           }
 
@@ -2557,6 +3110,9 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
           updateBoardDOM();
           renderHistoryTable();
           if (moveHistory.length > 0) enableReplayControls();
+          if (aiEnabled && !isGameOver && turn !== playerColor) {
+            setTimeout(() => triggerAiMoveIfNeeded(), 250);
+          }
         } else {
           showCustomAlert('有効なPGN指し手が見つかりませんでした。テキスト形式を確認してください。');
         }
@@ -2571,15 +3127,21 @@ function animateAndExecuteMove(moveObj, promoChoice = null) {
 
     window.onload = function() {
       initPWAAndOffline();
+      initStockfishEngine();
       createBoardDOM();
 
       if (!loadGameState()) {
         initBoardState();
       }
 
+      updateAiHeaderAndLabels();
       updateBoardDOM();
       renderHistoryTable();
-      updateScoreboardDOM(); // ← ここを追加！
+      updateScoreboardDOM();
+
+      if (aiEnabled && !isGameOver && turn !== playerColor && replayIndex === -1) {
+        setTimeout(() => triggerAiMoveIfNeeded(), 300);
+      }
     };
   </script>
 </body>
