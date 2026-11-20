@@ -173,31 +173,16 @@
         <span>タイマー</span>
       </button>
 
-      <button onclick="openDataModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
-        <i class="fa-solid fa-database text-xs"></i>
-        <span>データ</span>
-      </button>
-
-      <button onclick="openRuleModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
-        <i class="fa-solid fa-circle-info text-xs"></i>
-        <span>ルール</span>
-      </button>
-      
-      <!-- 座標表示切り替えボタン -->
-      <button onclick="toggleCoordinates()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
-        <i class="fa-solid fa-hashtag"></i>
-        <span id="coord-btn-text">座標: ON</span>
-      </button>
-
-      <!-- AI対戦設定ボタン（新規追加） -->
+      <!-- AI対戦設定ボタン -->
       <button id="ai-mode-btn" onclick="openAiModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
         <i class="fa-solid fa-robot text-xs"></i>
         <span id="ai-btn-text">AI対戦: OFF</span>
       </button>
 
-      <button onclick="toggleFullscreen()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
-        <i class="fa-solid fa-expand text-xs"></i>
-        <span id="fullscreen-btn-text">全画面</span>
+      <!-- ツールメニューを開くボタン（新規追加） -->
+      <button onclick="openToolsModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-screwdriver-wrench text-xs"></i>
+        <span>ツール</span>
       </button>
 
       <button onclick="resetGamePrompt()" class="px-3 py-1.5 text-sm font-medium bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-lg transition flex items-center gap-1.5">
@@ -509,6 +494,54 @@
           適用して対局開始
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- ツールメニュー選択モーダル（新規追加） -->
+  <div id="tools-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl border border-slate-100 flex flex-col gap-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-screwdriver-wrench text-indigo-500"></i>
+          <span>ツール・メニュー</span>
+        </h3>
+        <button onclick="closeToolsModal()" class="text-slate-400 hover:text-slate-600 text-sm">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 gap-2.5">
+        <!-- データ（PGN）ボタン -->
+        <button onclick="closeToolsModal(); openDataModal();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
+          <i class="fa-solid fa-database w-5 text-center text-slate-500"></i>
+          <span>データ (PGNセーブ/ロード)</span>
+        </button>
+
+        <!-- ルール解説ボタン -->
+        <button onclick="closeToolsModal(); openRuleModal();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
+          <i class="fa-solid fa-circle-info w-5 text-center text-slate-500"></i>
+          <span>ルールと操作説明</span>
+        </button>
+
+        <!-- 座標表示切り替えボタン -->
+        <button onclick="toggleCoordinates(); updateToolsModalState();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i class="fa-solid fa-hashtag w-5 text-center text-slate-500"></i>
+            <span>座標表示</span>
+          </div>
+          <span id="tools-coord-status" class="text-xs font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md">ON</span>
+        </button>
+
+        <!-- 全画面切り替えボタン -->
+        <button onclick="closeToolsModal(); toggleFullscreen();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
+          <i class="fa-solid fa-expand w-5 text-center text-slate-500"></i>
+          <span id="tools-fullscreen-text">全画面表示</span>
+        </button>
+      </div>
+
+      <button onclick="closeToolsModal()" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition mt-1">
+        閉じる
+      </button>
     </div>
   </div>
 
@@ -889,6 +922,32 @@
 
       isStockfishReady = false;
       if (statusEl) statusEl.textContent = '内蔵フォールバックAI待機中（オフライン）';
+    }
+
+    function openToolsModal() {
+      updateToolsModalState();
+      document.getElementById('tools-modal').classList.remove('hidden');
+    }
+
+    function closeToolsModal() {
+      document.getElementById('tools-modal').classList.add('hidden');
+    }
+
+    function updateToolsModalState() {
+      // 座標ボタンのON/OFF状態テキストを更新
+      const coordStatus = document.getElementById('tools-coord-status');
+      if (coordStatus) {
+        coordStatus.textContent = showCoordinates ? 'ON' : 'OFF';
+        coordStatus.className = showCoordinates 
+          ? 'text-xs font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-md' 
+          : 'text-xs font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md';
+      }
+
+      // 全画面状態に応じてテキストを切り替え
+      const fsText = document.getElementById('tools-fullscreen-text');
+      if (fsText) {
+        fsText.textContent = document.fullscreenElement ? '全画面解除' : '全画面表示';
+      }
     }
 
     function handleTimeout(loserColor) {
