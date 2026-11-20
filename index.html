@@ -161,11 +161,7 @@
     </div>
     
     <div class="flex items-center gap-2 flex-wrap">
-      <!-- AI対戦設定ボタン（新規追加） -->
-      <button id="ai-mode-btn" onclick="openAiModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
-        <i class="fa-solid fa-robot text-xs"></i>
-        <span id="ai-btn-text">AI対戦: OFF</span>
-      </button>
+      
 
       <button onclick="toggleTheme()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
         <i id="theme-btn-icon" class="fa-solid fa-moon text-xs"></i>
@@ -193,6 +189,12 @@
         <span id="coord-btn-text">座標: ON</span>
       </button>
 
+      <!-- AI対戦設定ボタン（新規追加） -->
+      <button id="ai-mode-btn" onclick="openAiModal()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
+        <i class="fa-solid fa-robot text-xs"></i>
+        <span id="ai-btn-text">AI対戦: OFF</span>
+      </button>
+
       <button onclick="toggleFullscreen()" class="px-3 py-1.5 text-sm font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition flex items-center gap-1.5">
         <i class="fa-solid fa-expand text-xs"></i>
         <span id="fullscreen-btn-text">全画面</span>
@@ -218,9 +220,9 @@
             <span id="turn-indicator" class="w-3.5 h-3.5 rounded-full inline-block border border-slate-400 bg-white"></span>
             <span id="game-status-text" class="text-base font-bold text-slate-800">白の手番です</span>
             <span id="check-badge" class="hidden ml-1 px-2 py-0.5 bg-rose-500 text-white text-xs font-semibold rounded-full animate-pulse">CHECK</span>
-            <span id="ai-thinking-badge" class="hidden ml-1 px-2.5 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full flex items-center gap-1.5">
+            <span id="ai-thinking-badge" class="invisible opacity-0 ml-1 px-2.5 py-0.5 bg-indigo-600 text-white text-xs font-semibold rounded-full inline-flex items-center gap-1.5 transition-opacity duration-150">
               <i class="fa-solid fa-circle-notch fa-spin text-[10px]"></i>
-              <span>Stockfish 思考中...</span>
+              <span>AI 思考中...</span>
             </span>
           </div>
           
@@ -366,6 +368,29 @@
         </div>
 
       </div>
+      
+
+      <!-- ▼ 評価値グラフウィジェット -->
+       <!--
+      <div id="eval-graph-widget" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-indigo-500"></i>
+            <span>形勢評価値グラフ</span>
+          </h3>
+          <span id="eval-current-text" class="text-xs font-mono font-bold text-slate-500">互角 (0.0)</span>
+        </div>
+        -->
+        <!-- グラフを描画するSVGコンテナ -->
+         <!--
+        <div class="relative w-full h-24 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden flex items-center">
+          <svg id="eval-svg" class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" stroke-dasharray="3 3" stroke-width="1" />
+            <polyline id="eval-polyline" fill="none" stroke="#6366f1" stroke-width="2" points="0,50 100,50" />
+          </svg>
+        </div>
+      </div>
+    -->
 
       <!-- ▼ 対局棋譜ウィジェットの下に追加するスコアボード -->
       <div id="scoreboard-widget" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
@@ -461,7 +486,7 @@
         <div class="flex flex-col gap-1.5">
           <div class="flex items-center justify-between">
             <label class="text-xs font-bold text-slate-700">AIの強さ (Skill Level)</label>
-            <span id="ai-level-label" class="text-xs font-bold text-indigo-600">Lv.5 (中級 / 約1500)</span>
+            <span id="ai-level-label" class="text-xs font-bold text-indigo-600">Lv.5 (中級)</span>
           </div>
           <div class="grid grid-cols-3 gap-1.5">
             <button onclick="selectAiModalLevel(1)" data-lv="1" class="ai-lv-btn py-2 px-2 rounded-lg text-xs font-semibold border transition">Lv.1 入門</button>
@@ -630,11 +655,11 @@
 
         <div>
           <h4 class="font-bold text-slate-800 text-sm mb-1">【Stockfish AI対戦】</h4>
-          <p>ヘッダーの「AI対戦」ボタンから、世界最強クラスのチェスエンジン Stockfish との対局を設定できます。あなたの担当色（白／黒）やAIの強さ（Lv.1〜Lv.20）を自由に選択できます。</p>
+          <p>ヘッダーの「AI対戦」ボタンから、チェスエンジン Stockfish との対局を設定できます。あなたの担当色（白／黒）やAIの強さ（Lv.1〜Lv.20）を自由に選択できます。</p>
         </div>
         <div>
           <h4 class="font-bold text-slate-800 text-sm mb-1">【基本操作】</h4>
-          <p>自分の手番の駒をタップすると、移動可能なマスが半透明グレーの円で表示されます。移動先をタップすると駒が滑らかに移動します。</p>
+          <p>自分の手番の駒をタップすると、移動可能なマスが半透明グレーの円で表示されます。移動先をタップすると駒が移動します。</p>
         </div>
         <div>
           <h4 class="font-bold text-slate-800 text-sm mb-1">【チェスタイマー】</h4>
@@ -782,6 +807,8 @@
     // 座標表示設定（デフォルト: 表示 ON）
     let showCoordinates = true;
 
+    let gameResult = '*';
+
     // --- プレイヤー名とスコア管理用変数 ---
     let playerNames = { white: '白プレイヤー', black: '黒プレイヤー' };
     let score = { white: 0, black: 0, draws: 0 };
@@ -840,6 +867,8 @@
           const blobUrl = URL.createObjectURL(blob);
           const worker = new Worker(blobUrl);
 
+          URL.revokeObjectURL(blobUrl);
+
           worker.onmessage = function(e) {
             const line = typeof e.data === 'string' ? e.data : String(e.data);
             handleStockfishMessage(line);
@@ -862,27 +891,30 @@
       if (statusEl) statusEl.textContent = '内蔵フォールバックAI待機中（オフライン）';
     }
 
-    function handleStockfishMessage(line) {
-      const statusEl = document.getElementById('sf-engine-status');
-      if (line.includes('uciok')) {
-        stockfishWorker.postMessage('isready');
-      } else if (line.includes('readyok')) {
-        isStockfishReady = true;
-        if (statusEl) {
-          statusEl.textContent = 'Stockfish 10 準備完了 (Online)';
-          statusEl.className = 'font-bold text-emerald-600';
-        }
-        // すでにAIの手番で待機中だった場合は思考を開始
-        if (aiEnabled && !isGameOver && turn !== playerColor && !isAiThinking && replayIndex === -1) {
-          triggerAiMoveIfNeeded();
-        }
-      } else if (line.startsWith('bestmove')) {
-        const parts = line.split(/\s+/);
-        const uciMove = parts[1];
-        if (uciMove && uciMove !== '(none)') {
-          onStockfishBestMove(uciMove);
-        }
+    function handleTimeout(loserColor) {
+      stopTimer();
+      stopAiThinking();
+      isGameOver = true;
+
+      if (loserColor === 'w') {
+        score.black++;
+        gameResult = '0-1';
+
+        showGameOverModal(
+          `時間切れ！ ${playerNames.white}のタイマーがゼロになりました。${playerNames.black}の勝利です！`
+        );
+      } else {
+        score.white++;
+        gameResult = '1-0';
+
+        showGameOverModal(
+          `時間切れ！ ${playerNames.black}のタイマーがゼロになりました。${playerNames.white}の勝利です！`
+        );
       }
+
+      updateScoreboardDOM();
+      saveGameState();
+      enableReplayControls();
     }
 
     // 現在の盤面からFEN文字列を生成
@@ -916,9 +948,11 @@
       if (castlingRights.bQ) cStr += 'q';
       fen += (cStr || '-') + ' ';
 
+      // boardToFEN() 内の該当部分
       if (enPassantTarget) {
         const files = ['a','b','c','d','e','f','g','h'];
         const ranks = ['8','7','6','5','4','3','2','1'];
+        // 配列インデックスが正しく対応しているか確認
         fen += files[enPassantTarget.c] + ranks[enPassantTarget.r] + ' ';
       } else {
         fen += '- ';
@@ -951,6 +985,7 @@
     }
 
     // Stockfish に思考を依頼
+    // Stockfish に思考を依頼
     function triggerAiMoveIfNeeded() {
       if (!aiEnabled || isGameOver || isAnimating || isPromoting || replayIndex >= 0) return;
       if (turn === playerColor) return;
@@ -959,37 +994,74 @@
       const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
       if (legalMoves.length === 0) return;
 
+      // ★ Lv.1 専用：ポカミス発生ロジック（50%の確率で発動）
+      if (aiSkillLevel === 1 && Math.random() < 0.5) {
+        isAiThinking = true;
+        aiRequestToken++;
+        const currentToken = aiRequestToken;
+        updateAiThinkingUI();
+
+        setTimeout(() => {
+          if (currentToken !== aiRequestToken || isGameOver || turn === playerColor || replayIndex >= 0) {
+            isAiThinking = false;
+            updateAiThinkingUI();
+            return;
+          }
+
+          // ポカミスの種類を抽選（ランダムな手、またはわざと評価値の低い悪手）
+          let blunderMove = null;
+          if (Math.random() < 0.5) {
+            // パターン1：完全にランダムな合法手（意味のない移動など）
+            blunderMove = legalMoves[Math.floor(Math.random() * legalMoves.length)];
+          } else {
+            // パターン2：わざと自分の駒得が下がる手（タダ取りされる手など）を優先して選ぶ
+            let worstScore = Infinity;
+            for (const m of legalMoves) {
+              const nextBd = cloneBoard(board);
+              nextBd[m.to.r][m.to.c] = nextBd[m.from.r][m.from.c];
+              nextBd[m.from.r][m.from.c] = null;
+              if (m.isEnPassant) nextBd[m.from.r][m.to.c] = null;
+              const s = evaluateBoardSimple(nextBd, turn);
+              if (s < worstScore) {
+                worstScore = s;
+                blunderMove = m;
+              }
+            }
+          }
+
+          isAiThinking = false;
+          updateAiThinkingUI();
+          const chosen = blunderMove || legalMoves[0];
+          animateAndExecuteMove(chosen, chosen.isPromotion ? 'q' : null);
+        }, 400); // 少し考えているフリをしてから指す
+        return;
+      }
+
       isAiThinking = true;
       aiRequestToken++;
       const currentToken = aiRequestToken;
       updateAiThinkingUI();
 
-      // レベルに応じた探索深さと思考時間（ms）
-      const depthMap = { 1: 1, 3: 3, 5: 6, 10: 10, 15: 14, 20: 18 };
-      const timeMap = { 1: 10, 3: 350, 5: 500, 10: 800, 15: 1200, 20: 1800 };
-      const depth = depthMap[aiSkillLevel] || Math.max(1, Math.round(aiSkillLevel * 0.9));
-      const moveTime = timeMap[aiSkillLevel] || 600;
+      if (isStockfishReady && stockfishWorker) {
+        // 現在の盤面をStockfishに送る
+        stockfishWorker.postMessage('position fen ' + boardToFEN());
 
-      if (stockfishWorker && isStockfishReady) {
-        const fen = boardToFEN();
-        stockfishWorker.postMessage(`setoption name Skill Level value ${aiSkillLevel}`);
-        stockfishWorker.postMessage(`position fen ${fen}`);
-        stockfishWorker.postMessage(`go depth ${depth} movetime ${moveTime}`);
+        // AIの強さを設定
+        stockfishWorker.postMessage(
+          `setoption name Skill Level value ${aiSkillLevel}`
+        );
 
-        // 万が一Workerが応答しない場合の安全タイムアウト
-        aiThinkTimeout = setTimeout(() => {
-          if (isAiThinking && currentToken === aiRequestToken) {
-            stockfishWorker.postMessage('stop');
-            executeFallbackAiMove(currentToken);
-          }
-        }, moveTime + 2500);
+        // 思考を開始
+        stockfishWorker.postMessage('go movetime 1000');
       } else {
-        // CDN未読み込み・オフライン時の内蔵ミニマックス探索フォールバック
+        // Stockfishが使えない場合は内蔵AIに切り替える
         aiThinkTimeout = setTimeout(() => {
+          if (currentToken !== aiRequestToken) return;
           executeFallbackAiMove(currentToken);
-        }, 350);
+        }, 500);
       }
     }
+    
 
     function onStockfishBestMove(uciMove) {
       if (aiThinkTimeout) {
@@ -1034,14 +1106,73 @@
 
       for (const m of legalMoves) {
         const nextBd = cloneBoard(board);
-        nextBd[m.to.r][m.to.c] = nextBd[m.from.r][m.from.c];
-        nextBd[m.from.r][m.from.c] = null;
-        if (m.isEnPassant) nextBd[m.from.r][m.to.c] = null;
-        if (m.isPromotion) nextBd[m.to.r][m.to.c] = { t: 'q', c: aiColor };
 
-        // 1手先の簡易評価 + 相手の最善取り返し減点
+        // 通常の駒の移動
+        nextBd[m.to.r][m.to.c] =
+          nextBd[m.from.r][m.from.c];
+
+        nextBd[m.from.r][m.from.c] = null;
+
+        // アンパッサン
+        if (m.isEnPassant) {
+          nextBd[m.from.r][m.to.c] = null;
+        }
+
+        // プロモーション
+        if (m.isPromotion) {
+          nextBd[m.to.r][m.to.c] = {
+            t: 'q',
+            c: aiColor
+          };
+        }
+
+        // キャスリング時のルークの移動
+        if (m.isCastling) {
+          const row = aiColor === 'w' ? 7 : 0;
+
+          if (m.to.c === 6) {
+            // キングサイド：h列からf列へ
+            nextBd[row][5] = nextBd[row][7];
+            nextBd[row][7] = null;
+          } else {
+            // クイーンサイド：a列からd列へ
+            nextBd[row][3] = nextBd[row][0];
+            nextBd[row][0] = null;
+          }
+        }
+
+        // 評価
         let scoreVal = evaluateBoardSimple(nextBd, aiColor);
-        const oppMoves = getLegalMoves(nextBd, oppColor, castlingRights, null);
+
+        // 相手側のキャスリング権は、AIの手で変化した可能性がある。
+        // ここでは相手の合法手を正しく判定できるよう、権利を更新する。
+        const nextCastlingRights = computeNextCastlingRights(
+          castlingRights,
+          m.from,
+          m.to
+        );
+
+        // 相手の合法手を取得
+        let nextEnPassantTarget = null;
+
+        const movingPiece = board[m.from.r][m.from.c];
+
+        if (
+          movingPiece.t === 'p' &&
+          Math.abs(m.to.r - m.from.r) === 2
+        ) {
+          nextEnPassantTarget = {
+            r: (m.from.r + m.to.r) / 2,
+            c: m.from.c
+          };
+        }
+
+        const oppMoves = getLegalMoves(
+          nextBd,
+          oppColor,
+          nextCastlingRights,
+          nextEnPassantTarget
+        );
         if (oppMoves.length === 0 && isInCheck(nextBd, oppColor)) {
           scoreVal += 10000;
         } else {
@@ -1099,14 +1230,19 @@
       updateAiThinkingUI();
     }
 
-    function updateAiThinkingUI() {
-      const badge = document.getElementById('ai-thinking-badge');
-      if (badge) {
-        if (isAiThinking && aiEnabled) badge.classList.remove('hidden');
-        else badge.classList.add('hidden');
-      }
-    }
 
+function updateAiThinkingUI() {
+  const badge = document.getElementById('ai-thinking-badge');
+  if (badge) {
+    if (isAiThinking && aiEnabled) {
+      badge.classList.remove('invisible', 'opacity-0');
+      badge.classList.add('visible', 'opacity-100');
+    } else {
+      badge.classList.remove('visible', 'opacity-100');
+      badge.classList.add('invisible', 'opacity-0');
+    }
+  }
+}
     function updateAiHeaderAndLabels() {
       const aiBtn = document.getElementById('ai-mode-btn');
       const aiBtnText = document.getElementById('ai-btn-text');
@@ -1142,12 +1278,12 @@
 
     // --- AI設定モーダル操作 ---
     const aiLevelDescriptions = {
-      1: 'Lv.1 (入門 / 約800)',
-      3: 'Lv.3 (初級 / 約1150)',
-      5: 'Lv.5 (中級 / 約1500)',
-      10: 'Lv.10 (上級 / 約2000)',
-      15: 'Lv.15 (達人 / 約2500)',
-      20: 'Lv.20 (最強 / 約3000+)'
+      1: 'Lv.1 (入門)',
+      3: 'Lv.3 (初級)',
+      5: 'Lv.5 (中級)',
+      10: 'Lv.10 (上級)',
+      15: 'Lv.15 (達人)',
+      20: 'Lv.20 (最強)'
     };
 
     function openAiModal() {
@@ -1359,7 +1495,8 @@
         playerNames,
         aiEnabled,
         playerColor,
-        aiSkillLevel
+        aiSkillLevel,
+        gameResult,
       };
       try {
         localStorage.setItem('chess_saved_game', JSON.stringify(state));
@@ -1382,6 +1519,7 @@
           whiteTime = state.whiteTime !== undefined ? state.whiteTime : initialTimeSec;
           blackTime = state.blackTime !== undefined ? state.blackTime : initialTimeSec;
           isGameOver = state.isGameOver || false;
+          gameResult = state.gameResult || '*';
 
           if (state.score) score = state.score;
           if (state.playerNames) playerNames = state.playerNames;
@@ -1639,6 +1777,7 @@
       validMoves = [];
       replayIndex = -1;
       isGameOver = false;
+      gameResult = '*';
       stopReplayAuto();
 
       resetTimer();
@@ -1712,6 +1851,8 @@
           const c = isFlipped ? 7 - displayC : displayC;
           const idx = displayR * 8 + displayC;
           const dom = squareDOMCache[idx];
+
+          if (!dom) continue;
 
           dom.r = r;
           dom.c = c;
@@ -1830,7 +1971,7 @@
     }
 
     function onSquareClick(r, c) {
-      if (isAnimating || isPromoting || isGameOver || isAiThinking) return;
+      if (isAnimating || isPromoting || isGameOver || isAiThinking || replayIndex >= 0) return;
       // AI対戦中は人間の手番以外操作不可
       if (aiEnabled && turn !== playerColor) return;
 
@@ -2023,8 +2164,16 @@
 
     function executeMove(moveObj, promoChoice = null, skipAiTrigger = false) {
       const { from, to, isCastling, isEnPassant, isPromotion } = moveObj;
+      const boardBefore = cloneBoard(board);
+
       const movingPiece = board[from.r][from.c];
-      const capturedPiece = isEnPassant ? board[from.r][to.c] : board[to.r][to.c];
+      const capturedPiece = isEnPassant
+        ? board[from.r][to.c]
+        : board[to.r][to.c];
+
+      const effectivePromo = isPromotion
+        ? (promoChoice || 'q')
+        : null;
 
       board[to.r][to.c] = movingPiece;
       board[from.r][from.c] = null;
@@ -2065,7 +2214,16 @@
         nextHalfmove = 0;
       }
 
-      const san = formatSAN(moveObj, movingPiece, capturedPiece, promoChoice);
+
+      const san = formatSAN(
+        moveObj,
+        movingPiece,
+        capturedPiece,
+        effectivePromo,
+        boardBefore
+      );
+
+      const evalScore = evaluateBoardSimple(board, 'w') / 100;
 
       const moveRecord = {
         from, to,
@@ -2078,6 +2236,7 @@
         prevEP: enPassantTarget,
         prevHalfmove: halfmoveClock,
         boardState: cloneBoard(board),
+        eval: evalScore,
         san
       };
       moveHistory.push(moveRecord);
@@ -2102,6 +2261,7 @@
       recordPosition();
       updateBoardDOM();
       renderHistoryTable();
+      updateEvalGraph();
 
       if (isInCheck(board, turn)) {
         playSound('check');
@@ -2114,6 +2274,52 @@
       // AIの手番になった場合、Stockfishの思考を開始
       if (!ended && !skipAiTrigger && aiEnabled && turn !== playerColor) {
         setTimeout(() => triggerAiMoveIfNeeded(), 120);
+      }
+    }
+
+    function updateEvalGraph() {
+      const polyline = document.getElementById('eval-polyline');
+      const currentText = document.getElementById('eval-current-text');
+      if (!polyline || moveHistory.length === 0) return;
+
+      const points = [];
+      const maxPoints = Math.max(moveHistory.length, 1);
+      const width = 100;
+      const height = 100;
+
+      moveHistory.forEach((m, idx) => {
+        // 手数が1つの場合は中央（x=50）、複数の場合は均等配置
+        const x = maxPoints === 1 ? 50 : (idx / (maxPoints - 1)) * width;
+        
+        // 評価値（例: -5.0 〜 +5.0）を Y座標 (0〜100) にマッピング
+        // 互角（0）が真ん中の 50、白有利が上（0に向かう）、黒有利が下（100に向かう）
+        let evalVal = m.eval !== undefined ? m.eval : 0;
+        
+        // 評価値を最大±5.0でクランプ（振り切れたときに枠外にいかないようにする）
+        evalVal = Math.max(-5.0, Math.min(5.0, evalVal));
+
+        // 50（中央）から評価値に応じて上下させる（1点につき10ピクセル変動）
+        let y = 50 - (evalVal * 10);
+        y = Math.max(5, Math.min(95, y)); // 枠内に収める
+
+        points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+      });
+
+      polyline.setAttribute('points', points.join(' '));
+
+      // 最新の評価値テキストを更新
+      const lastEval = moveHistory[moveHistory.length - 1]?.eval || 0;
+      if (currentText) {
+        if (lastEval > 0) {
+          currentText.textContent = `白有利 (+${lastEval.toFixed(1)})`;
+          currentText.className = 'text-xs font-mono font-bold text-indigo-600';
+        } else if (lastEval < 0) {
+          currentText.textContent = `黒有利 (${lastEval.toFixed(1)})`;
+          currentText.className = 'text-xs font-mono font-bold text-slate-800';
+        } else {
+          currentText.textContent = '互角 (0.0)';
+          currentText.className = 'text-xs font-mono font-bold text-slate-500';
+        }
       }
     }
 
@@ -2170,7 +2376,10 @@
 
     function startTimer() {
       if (initialTimeSec === 0 || isTimerPaused || isGameOver) return;
-      stopTimer();
+      if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+      }
       isTimerRunning = true;
 
       if (timerMode === 'delay') {
@@ -2243,9 +2452,11 @@
       isGameOver = true;
       if (loserColor === 'w') {
         score.black++;
+        gameResult = '0-1';
         showGameOverModal(`時間切れ！ ${playerNames.white}のタイマーがゼロになりました。${playerNames.black}の勝利です！`);
       } else {
         score.white++;
+        gameResult = '1-0';
         showGameOverModal(`時間切れ！ ${playerNames.black}のタイマーがゼロになりました。${playerNames.white}の勝利です！`);
       }
       updateScoreboardDOM();
@@ -2264,30 +2475,139 @@
       resetGame();
     }
 
-    function formatSAN(move, piece, captured, promo) {
+    // キャスリングの表記揺れ（数字の0とアルファベットのO）を統一するヘルパー
+    function normalizeSAN(san) {
+      return san.replace(/0-0-0/g, 'O-O-O').replace(/0-0/g, 'O-O');
+    }
+
+    function formatSAN(move, piece, captured, promo, boardBefore) {
+    const files = ['a','b','c','d','e','f','g','h'];
+    const ranks = ['8','7','6','5','4','3','2','1'];
+
+    // キャスリングの場合も、後続のチェック判定まで処理する
+    let str = move.isCastling
+      ? (move.to.c === 6 ? 'O-O' : 'O-O-O')
+      : '';
+
+      if (!move.isCastling) {
+        if (piece.t !== 'p') {
+          str += piece.t.toUpperCase();
+
+          const alternatives = getLegalMoves(
+            boardBefore,
+            piece.c,
+            castlingRights,
+            enPassantTarget
+          ).filter(m => {
+            if (m.from.r === move.from.r && m.from.c === move.from.c) {
+              return false;
+            }
+
+            const other = boardBefore[m.from.r][m.from.c];
+
+            return (
+              other &&
+              other.t === piece.t &&
+              m.to.r === move.to.r &&
+              m.to.c === move.to.c
+            );
+          });
+
+          if (alternatives.length > 0) {
+            const sameFile = alternatives.some(
+              m => m.from.c === move.from.c
+            );
+
+            const sameRank = alternatives.some(
+              m => m.from.r === move.from.r
+            );
+
+            if (!sameFile) {
+              str += files[move.from.c];
+            } else if (!sameRank) {
+              str += ranks[move.from.r];
+            } else {
+              str += files[move.from.c] + ranks[move.from.r];
+            }
+          }
+        } else if (captured) {
+          str += files[move.from.c];
+        }
+
+        if (captured) str += 'x';
+
+        str += files[move.to.c] + ranks[move.to.r];
+
+        if (move.isPromotion) {
+          str += '=' + (promo || 'q').toUpperCase();
+        }
+      }
+      // 移動後の盤面を再現
+      const nextBoard = cloneBoard(boardBefore);
+
+      nextBoard[move.to.r][move.to.c] =
+        nextBoard[move.from.r][move.from.c];
+
+      nextBoard[move.from.r][move.from.c] = null;
+
+      if (move.isEnPassant) {
+        nextBoard[move.from.r][move.to.c] = null;
+      }
+
       if (move.isCastling) {
-        return move.to.c === 6 ? 'O-O' : 'O-O-O';
+        if (move.to.c === 6) {
+          nextBoard[move.to.r][5] = nextBoard[move.to.r][7];
+          nextBoard[move.to.r][7] = null;
+        } else {
+          nextBoard[move.to.r][3] = nextBoard[move.to.r][0];
+          nextBoard[move.to.r][0] = null;
+        }
       }
-      const files = ['a','b','c','d','e','f','g','h'];
-      const ranks = ['8','7','6','5','4','3','2','1'];
-      let str = '';
-      if (piece.t !== 'p') {
-        str += piece.t.toUpperCase();
-      } else if (captured) {
-        str += files[move.from.c];
+
+      if (move.isPromotion) {
+        nextBoard[move.to.r][move.to.c] = {
+          t: promo || 'q',
+          c: piece.c
+        };
       }
-      if (captured) str += 'x';
-      str += files[move.to.c] + ranks[move.to.r];
-      if (promo) str += '=' + promo.toUpperCase();
+
+      const opponent = piece.c === 'w' ? 'b' : 'w';
+
+      if (isInCheck(nextBoard, opponent)) {
+        const nextRights = computeNextCastlingRights(
+          castlingRights,
+          move.from,
+          move.to
+        );
+
+        const nextMoves = getLegalMoves(
+          nextBoard,
+          opponent,
+          nextRights,
+          null
+        );
+
+        str += nextMoves.length === 0 ? '#' : '+';
+      }
+
       return str;
     }
 
     function getPositionKey() {
+      const hasLegalEnPassant =
+        enPassantTarget &&
+        getLegalMoves(
+          board,
+          turn,
+          castlingRights,
+          enPassantTarget
+        ).some(m => m.isEnPassant);
+
       return JSON.stringify({
         board,
         turn,
         castlingRights,
-        ep: enPassantTarget
+        ep: hasLegalEnPassant ? enPassantTarget : null
       });
     }
 
@@ -2397,18 +2717,74 @@
         }
         if (!isInCheck(bd, p.c)) {
           if (p.c === 'w') {
-            if (cRights.wK && !bd[7][5] && !bd[7][6] && !isSquareAttacked(bd, 7, 5, 'b') && !isSquareAttacked(bd, 7, 6, 'b')) {
-              moves.push({ from: {r:7,c:4}, to: {r:7,c:6}, isCastling: true });
-            }
-            if (cRights.wQ && !bd[7][3] && !bd[7][2] && !bd[7][1] && !isSquareAttacked(bd, 7, 3, 'b') && !isSquareAttacked(bd, 7, 2, 'b')) {
-              moves.push({ from: {r:7,c:4}, to: {r:7,c:2}, isCastling: true });
+            if (
+                r === 7 &&
+                c === 4 &&
+                cRights.wK &&
+                bd[7][7]?.t === 'r' &&
+                bd[7][7]?.c === 'w' &&
+                !bd[7][5] &&
+                !bd[7][6] &&
+                !isSquareAttacked(bd, 7, 5, 'b') &&
+                !isSquareAttacked(bd, 7, 6, 'b')
+              ) {
+                moves.push({
+                  from: {r:7,c:4},
+                  to: {r:7,c:6},
+                  isCastling: true
+                });
+              }
+            if (
+              r === 7 &&
+              c === 4 &&
+              cRights.wQ &&
+              bd[7][0]?.t === 'r' &&
+              bd[7][0]?.c === 'w' &&
+              !bd[7][3] &&
+              !bd[7][2] &&
+              !bd[7][1] &&
+              !isSquareAttacked(bd, 7, 3, 'b') &&
+              !isSquareAttacked(bd, 7, 2, 'b')
+            ) {moves.push({ from: {r:7,c:4}, to: {r:7,c:2}, isCastling: true });
             }
           } else {
-            if (cRights.bK && !bd[0][5] && !bd[0][6] && !isSquareAttacked(bd, 0, 5, 'w') && !isSquareAttacked(bd, 0, 6, 'w')) {
-              moves.push({ from: {r:0,c:4}, to: {r:0,c:6}, isCastling: true });
+            // 黒のキングサイドキャスリング
+            if (
+              r === 0 &&
+              c === 4 &&
+              cRights.bK &&
+              bd[0][7]?.t === 'r' &&
+              bd[0][7]?.c === 'b' &&
+              !bd[0][5] &&
+              !bd[0][6] &&
+              !isSquareAttacked(bd, 0, 5, 'w') &&
+              !isSquareAttacked(bd, 0, 6, 'w')
+            ) {
+              moves.push({
+                from: {r:0,c:4},
+                to: {r:0,c:6},
+                isCastling: true
+              });
             }
-            if (cRights.bQ && !bd[0][3] && !bd[0][2] && !bd[0][1] && !isSquareAttacked(bd, 0, 3, 'w') && !isSquareAttacked(bd, 0, 2, 'w')) {
-              moves.push({ from: {r:0,c:4}, to: {r:0,c:2}, isCastling: true });
+
+            // 黒のクイーンサイドキャスリング
+            if (
+              r === 0 &&
+              c === 4 &&
+              cRights.bQ &&
+              bd[0][0]?.t === 'r' &&
+              bd[0][0]?.c === 'b' &&
+              !bd[0][3] &&
+              !bd[0][2] &&
+              !bd[0][1] &&
+              !isSquareAttacked(bd, 0, 3, 'w') &&
+              !isSquareAttacked(bd, 0, 2, 'w')
+            ) {
+              moves.push({
+                from: {r:0,c:4},
+                to: {r:0,c:2},
+                isCastling: true
+              });
             }
           }
         }
@@ -2612,26 +2988,28 @@
       }
 
       const posKey = getPositionKey();
-      if (positionHistory[posKey] >= 3) {
+      // 五回同一局面による自動引き分け
+      if (positionHistory[posKey] >= 5) {
         stopTimer();
         stopAiThinking();
         isGameOver = true;
         score.draws++;
         updateScoreboardDOM();
         saveGameState();
-        showGameOverModal('スリーフォールド・レピティション！ 引き分けです');
+        showGameOverModal('ファイブフォールド・レピティション！ 引き分けです');
         enableReplayControls();
         return true;
       }
 
-      if (halfmoveClock >= 100) {
+      // 75手ルールによる自動引き分け
+      if (halfmoveClock >= 150) {
         stopTimer();
         stopAiThinking();
         isGameOver = true;
         score.draws++;
         updateScoreboardDOM();
         saveGameState();
-        showGameOverModal('50手ルール適用！ 引き分けです');
+        showGameOverModal('75手ルール適用！ 引き分けです');
         enableReplayControls();
         return true;
       }
@@ -2808,6 +3186,7 @@
 
       updateBoardDOM();
       renderHistoryTable();
+      updateEvalGraph();
       saveGameState();
 
       if (aiEnabled && turn !== playerColor) {
@@ -2966,6 +3345,7 @@
       if (slider) slider.value = idx;
       updateBoardDOM();
       renderHistoryTable();
+      updateEvalGraph();
     }
 
     function stepReplay(dir) {
@@ -3011,15 +3391,7 @@
       pgn += `[White "${playerNames.white}"]\n`;
       pgn += `[Black "${playerNames.black}"]\n`;
       
-      let result = '*';
-      if (moveHistory.length > 0) {
-        const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
-        if (legalMoves.length === 0) {
-          result = isInCheck(board, turn) ? (turn === 'w' ? '0-1' : '1-0') : '1/2-1/2';
-        } else if (positionHistory[getPositionKey()] >= 3 || halfmoveClock >= 100 || isDeadPosition(board)) {
-          result = '1/2-1/2';
-        }
-      }
+      let result = gameResult;
       pgn += `[Result "${result}"]\n\n`;
 
       for (let i = 0; i < moveHistory.length; i++) {
@@ -3033,19 +3405,31 @@
     }
 
     function parsePGNMoves(pgnText) {
-      let clean = pgnText.replace(/\[.*?\]/g, '').replace(/\{.*?\}/g, '').replace(/;.*$/gm, '');
+      let clean = pgnText
+        .replace(/\[.*?\]/g, '')         // ヘッダータグを削除
+        .replace(/\{.*?\}/g, '')         // コメントを削除
+        .replace(/\([\s\S]*?\)/g, '')    // 分岐を削除
+        .replace(/;.*$/gm, '');          // セミコロン以降を削除
+
       const tokens = clean.split(/\s+/).filter(t => t.length > 0);
       const sanMoves = [];
 
-      for (const token of tokens) {
+      for (let token of tokens) {
         if (/^\d+\.+$/.test(token)) continue;
+        
+        // "1.e4" のように数字と指し手がくっついている場合に対応
         if (/^\d+\./.test(token)) {
-          const movePart = token.replace(/^\d+\.+/, '');
-          if (movePart) sanMoves.push(movePart);
-          continue;
+          token = token.replace(/^\d+\.+/, '');
+          if (!token) continue;
         }
+
         if (['1-0', '0-1', '1/2-1/2', '*'].includes(token)) continue;
-        sanMoves.push(token.replace(/[+#]/g, ''));
+
+        // チェック(+)、メイト(#)、注釈(!?)などを除去
+        let cleanedMove = token.replace(/[!?+#]/g, '');
+        if (cleanedMove) {
+          sanMoves.push(cleanedMove);
+        }
       }
       return sanMoves;
     }
@@ -3077,28 +3461,79 @@
       try {
         const text = document.getElementById('data-textarea').value.trim();
         const sanList = parsePGNMoves(text);
+        
         if (sanList.length > 0) {
           initBoardState();
           
           for (let i = 0; i < sanList.length; i++) {
-            const san = sanList[i];
+            let san = sanList[i].replace(/[+#?!]/g, ''); // チェックや注釈を除去
             const legalMoves = getLegalMoves(board, turn, castlingRights, enPassantTarget);
-            const promoMatch = san.match(/=([QRBN])/);
+            let matchedMove = null;
 
-            const matchedMove = legalMoves.find(m => {
-              const movingPiece = board[m.from.r][m.from.c];
-              const capturedPiece = m.isEnPassant ? board[m.from.r][m.to.c] : board[m.to.r][m.to.c];
-              const pChoice = promoMatch ? promoMatch[1].toLowerCase() : 'q';
-              return formatSAN(m, movingPiece, capturedPiece, pChoice) === san ||
-                    formatSAN(m, movingPiece, capturedPiece, 'q') === san || 
-                    formatSAN(m, movingPiece, capturedPiece, 'r') === san ||
-                    formatSAN(m, movingPiece, capturedPiece, 'b') === san ||
-                    formatSAN(m, movingPiece, capturedPiece, 'n') === san;
-            });
+            // 1. キャスリングの判定
+            if (san === 'O-O' || san === '0-0') {
+              matchedMove = legalMoves.find(m => m.isCastling && m.to.c === 6);
+            } else if (san === 'O-O-O' || san === '0-0-0') {
+              matchedMove = legalMoves.find(m => m.isCastling && m.to.c === 2);
+            } else {
+              // 2. 通常の手の判定（末尾の2文字から移動先マスを特定）
+              // 例: "Nf3" なら "f3", "exd5" なら "d5"
+              const destStr = san.slice(-2); 
+              const files = ['a','b','c','d','e','f','g','h'];
+              const ranks = ['8','7','6','5','4','3','2','1'];
+              
+              const targetC = files.indexOf(destStr[0]);
+              const targetR = ranks.indexOf(destStr[1]);
+
+              // 先頭の文字から駒の種類を特定（大文字がなければポーン 'p'）
+              let pieceType = 'p';
+              const firstChar = san[0];
+              if (['N', 'B', 'R', 'Q', 'K'].includes(firstChar)) {
+                pieceType = firstChar.toLowerCase();
+              }
+
+              // 合法手の中から「移動先」と「駒の種類」が一致するものを探す
+              const candidates = legalMoves.filter(m => {
+                const piece = board[m.from.r][m.from.c];
+                return m.to.r === targetR && m.to.c === targetC && piece.t === pieceType;
+              });
+
+              if (candidates.length === 1) {
+                matchedMove = candidates[0];
+              } else if (candidates.length > 1) {
+                // 同じ種類の駒が同じマスに動ける場合（例: Nbd7 など）の曖昧さ回避
+                let disambigChar = '';
+
+                if (pieceType === 'p' && san.includes('x')) {
+                  // ポーンの取りは先頭文字が移動元ファイル
+                  disambigChar = san[0];
+                } else if (pieceType !== 'p') {
+                  // ナイトやルークなどは駒の種類の次の文字
+                  disambigChar = san[1] || '';
+                }
+
+                matchedMove = candidates.find(m => {
+                  const fromFile = files[m.from.c];
+                  const fromRank = ranks[m.from.r];
+
+                  return (
+                    fromFile === disambigChar ||
+                    fromRank === disambigChar
+                  );
+                });
+              }
+            }
 
             if (matchedMove) {
+              // プロモーション（昇格）がある場合の処理
+              const promoMatch = san.match(/=([QRBN])/);
               const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : (matchedMove.isPromotion ? 'q' : null);
               executeMove(matchedMove, promoChoice, true);
+            } else {
+              const moveNum = Math.floor(i / 2) + 1;
+              const colorName = (i % 2 === 0) ? '白' : '黒';
+              showCustomAlert(`ロード中断: 第${moveNum}手（${colorName}）の "${sanList[i]}" が現在の盤面で見つかりませんでした。`);
+              break; 
             }
           }
 
