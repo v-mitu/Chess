@@ -371,7 +371,7 @@
       
 
       <!-- ▼ 評価値グラフウィジェット -->
-       <!--
+       
       <div id="eval-graph-widget" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-2">
         <div class="flex items-center justify-between">
           <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -380,9 +380,9 @@
           </h3>
           <span id="eval-current-text" class="text-xs font-mono font-bold text-slate-500">互角 (0.0)</span>
         </div>
-        -->
+        
         <!-- グラフを描画するSVGコンテナ -->
-         <!--
+         
         <div class="relative w-full h-24 bg-slate-50 rounded-xl border border-slate-100 overflow-hidden flex items-center">
           <svg id="eval-svg" class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
             <line x1="0" y1="50" x2="100" y2="50" stroke="#cbd5e1" stroke-dasharray="3 3" stroke-width="1" />
@@ -390,7 +390,7 @@
           </svg>
         </div>
       </div>
-    -->
+    
 
       <!-- ▼ 対局棋譜ウィジェットの下に追加するスコアボード -->
       <div id="scoreboard-widget" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
@@ -2223,7 +2223,7 @@ function updateAiThinkingUI() {
         boardBefore
       );
 
-      const evalScore = evaluateBoardSimple(board, 'w') / 100;
+      const evalScore = evaluateBoardSimple(board, 'w');
 
       const moveRecord = {
         from, to,
@@ -2280,30 +2280,39 @@ function updateAiThinkingUI() {
     function updateEvalGraph() {
       const polyline = document.getElementById('eval-polyline');
       const currentText = document.getElementById('eval-current-text');
-      if (!polyline || moveHistory.length === 0) return;
+      if (!polyline) return;
+
+      // 手数が0（ゲーム開始直後やリセット時）の初期表示
+      if (moveHistory.length === 0) {
+        polyline.setAttribute('points', '0,50 100,50');
+        if (currentText) {
+          currentText.textContent = '互角 (0.0)';
+          currentText.className = 'text-xs font-mono font-bold text-slate-500';
+        }
+        return;
+      }
 
       const points = [];
-      const maxPoints = Math.max(moveHistory.length, 1);
+      const maxPoints = moveHistory.length;
       const width = 100;
-      const height = 100;
 
       moveHistory.forEach((m, idx) => {
-        // 手数が1つの場合は中央（x=50）、複数の場合は均等配置
+        // 1手しかない場合は中央（x=50）、複数の場合は均等配置
         const x = maxPoints === 1 ? 50 : (idx / (maxPoints - 1)) * width;
         
-        // 評価値（例: -5.0 〜 +5.0）を Y座標 (0〜100) にマッピング
-        // 互角（0）が真ん中の 50、白有利が上（0に向かう）、黒有利が下（100に向かう）
         let evalVal = m.eval !== undefined ? m.eval : 0;
-        
-        // 評価値を最大±5.0でクランプ（振り切れたときに枠外にいかないようにする）
-        evalVal = Math.max(-5.0, Math.min(5.0, evalVal));
+        evalVal = Math.max(-5.0, Math.min(5.0, evalVal)); // ±5.0に制限
 
-        // 50（中央）から評価値に応じて上下させる（1点につき10ピクセル変動）
-        let y = 50 - (evalVal * 10);
+        let y = 50 - (evalVal * 10); // 評価値に応じて上下させる
         y = Math.max(5, Math.min(95, y)); // 枠内に収める
 
         points.push(`${x.toFixed(1)},${y.toFixed(1)}`);
       });
+
+      // 1手しかない場合はSVGで線を描画できるよう点を複製する
+      if (points.length === 1) {
+        points.push(points[0]);
+      }
 
       polyline.setAttribute('points', points.join(' '));
 
