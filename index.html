@@ -514,7 +514,7 @@
         <!-- データ（PGN）ボタン -->
         <button onclick="closeToolsModal(); openDataModal();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
           <i class="fa-solid fa-database w-5 text-center text-slate-500"></i>
-          <span>データ (PGNセーブ/ロード)</span>
+          <span>データ</span>
         </button>
 
         <!-- ルール解説ボタン -->
@@ -639,28 +639,44 @@
     </div>
   </div>
 
-  <!-- 対局データ（PGN セーブ＆ロード）モーダル -->
+  <!-- 対局データ（PGN / FEN セーブ＆ロード）モーダル -->
   <div id="data-modal" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
     <div class="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-100 flex flex-col gap-4">
       <div class="flex items-center justify-between pb-2 border-b border-slate-100">
         <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
           <i class="fa-solid fa-file-code text-slate-500"></i>
-          <span>PGNデータ セーブ＆ロード</span>
+          <span>データ管理 (PGN / FEN)</span>
         </h3>
         <button onclick="closeDataModal()" class="text-slate-400 hover:text-slate-600 text-sm">
           <i class="fa-solid fa-xmark"></i>
         </button>
       </div>
-      <p class="text-xs text-slate-500">標準的なPGN (Portable Game Notation) 形式のテキストデータです。</p>
-      <textarea id="data-textarea" class="w-full h-44 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="ここにPGNテキストを貼り付け"></textarea>
-      <div class="flex items-center gap-2">
-        <button onclick="copyGameData()" class="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition flex items-center justify-center gap-1.5">
-          <i class="fa-solid fa-copy text-xs"></i>
-          <span>コピー</span>
-        </button>
-        <button onclick="loadGameData()" class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition shadow-sm flex items-center justify-center gap-1.5">
+
+      <!-- PGN / FEN 切り替えタブ -->
+      <div class="flex rounded-xl bg-slate-100 p-1 text-xs font-semibold">
+        <button id="tab-pgn-btn" onclick="switchDataType('pgn')" class="flex-1 py-1.5 rounded-lg transition bg-white text-slate-800 shadow-sm">PGN 棋譜</button>
+        <button id="tab-fen-btn" onclick="switchDataType('fen')" class="flex-1 py-1.5 rounded-lg transition text-slate-500 hover:text-slate-800">FEN 局面</button>
+      </div>
+
+      <div class="flex flex-col gap-1.5">
+        <div class="flex items-center justify-between">
+          <label id="data-label-text" class="text-xs font-bold text-slate-700">PGNデータ</label>
+          <button onclick="copyGameData()" class="text-xs font-semibold text-indigo-600 hover:underline flex items-center gap-1">
+            <i class="fa-solid fa-copy"></i> コピーする
+          </button>
+        </div>
+        <textarea id="data-textarea" class="w-full h-36 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" placeholder="ここにPGN棋譜、またはFEN文字列を貼り付け"></textarea>
+      </div>
+
+      <!-- 下部のロードボタン：左がPGNロード、右がFENロード -->
+      <div class="grid grid-cols-2 gap-2 mt-1">
+        <button onclick="loadGameData()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition flex items-center justify-center gap-1.5 border border-slate-200">
           <i class="fa-solid fa-file-import text-xs"></i>
           <span>PGNロード</span>
+        </button>
+        <button onclick="loadFENData()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-sm transition flex items-center justify-center gap-1.5 border border-slate-200">
+          <i class="fa-solid fa-chess-board text-xs"></i>
+          <span>FENロード</span>
         </button>
       </div>
     </div>
@@ -3271,7 +3287,6 @@ function updateAiThinkingUI() {
     function confirmResetGame() {
       closeResetModal();
       localStorage.removeItem('chess_saved_game');
-      score = { white: 0, black: 0, draws: 0 };
       resetGame();
     }
     function resetGame() {
@@ -3452,6 +3467,110 @@ function updateAiThinkingUI() {
       if (playBtn) playBtn.innerHTML = '<i class="fa-solid fa-play"></i>';
     }
 
+    // FEN文字列から盤面をロードする関数
+    function loadFENData() {
+      if (isAnimating || isPromoting) return;
+      try {
+        const fenText = document.getElementById('data-textarea').value.trim();
+        if (!fenText) {
+          showCustomAlert('FEN文字列を入力してください。');
+          return;
+        }
+
+        const parts = fenText.split(/\s+/);
+        if (parts.length < 1) {
+          showCustomAlert('無効なFENフォーマットです。');
+          return;
+        }
+
+        const fenBoard = parts[0];
+        const newBoard = [];
+        const ranks = fenBoard.split('/');
+
+        if (ranks.length !== 8) {
+          showCustomAlert('FENのランク数が正しくありません（8行必要です）。');
+          return;
+        }
+
+        for (let r = 0; r < 8; r++) {
+          const row = [];
+          for (let char of ranks[r]) {
+            if (!isNaN(char)) {
+              // 数字の分だけ空きマスを追加
+              const emptyCount = parseInt(char, 10);
+              for (let i = 0; i < emptyCount; i++) row.push(null);
+            } else {
+              // 駒の追加 (大文字=白, 小文字=黒)
+              const color = char === char.toUpperCase() ? 'w' : 'b';
+              const type = char.toLowerCase();
+              if (['p', 'n', 'b', 'r', 'q', 'k'].includes(type)) {
+                row.push({ t: type, c: color });
+              } else {
+                row.push(null);
+              }
+            }
+          }
+          if (row.length !== 8) {
+            showCustomAlert(`第 ${r+1} 行目のマス数が8マスではありません。`);
+            return;
+          }
+          newBoard.push(row);
+        }
+
+        // 状態の適用
+        board = newBoard;
+        turn = parts[1] || 'w';
+        
+        // キャスリング権の復元
+        const cStr = parts[2] || '-';
+        castlingRights = {
+          wK: cStr.includes('K'),
+          wQ: cStr.includes('Q'),
+          bK: cStr.includes('k'),
+          bQ: cStr.includes('q')
+        };
+
+        // アンパッサンの復元
+        const epStr = parts[3] || '-';
+        if (epStr !== '-') {
+          const files = ['a','b','c','d','e','f','g','h'];
+          const ranksArr = ['8','7','6','5','4','3','2','1'];
+          enPassantTarget = {
+            c: files.indexOf(epStr[0]),
+            r: ranksArr.indexOf(epStr[1])
+          };
+        } else {
+          enPassantTarget = null;
+        }
+
+        // 半手数・手数の復元
+        halfmoveClock = parseInt(parts[4], 10) || 0;
+
+        // リセット＆画面更新
+        moveHistory = [];
+        positionHistory = {};
+        selectedSquare = null;
+        validMoves = [];
+        replayIndex = -1;
+        isGameOver = false;
+
+        recordPosition();
+        closeDataModal();
+        updateBoardDOM();
+        renderHistoryTable();
+        disableReplayControls();
+        saveGameState();
+
+        showCustomAlert('FENから盤面を正常にロードしました！');
+
+        if (aiEnabled && !isGameOver && turn !== playerColor) {
+          setTimeout(() => triggerAiMoveIfNeeded(), 250);
+        }
+      } catch (e) {
+        showCustomAlert('FENの読み込みに失敗しました: ' + e.message);
+      }
+    }
+
     function generatePGN() {
       let pgn = '[Event "Casual Game"]\n';
       pgn += '[Site "Local Chess App"]\n';
@@ -3508,9 +3627,42 @@ function updateAiThinkingUI() {
     function openPieceRulesModal() { document.getElementById('piece-rules-modal').classList.remove('hidden'); }
     function closePieceRulesModal() { document.getElementById('piece-rules-modal').classList.add('hidden'); }
 
+    let currentDataType = 'pgn'; // 現在選択されているタブ ('pgn' または 'fen')
+
     function openDataModal() {
-      document.getElementById('data-textarea').value = generatePGN();
+      currentDataType = 'pgn'; // モーダルを開いたときは初期状態でPGNを表示
+      updateDataModalView();
       document.getElementById('data-modal').classList.remove('hidden');
+    }
+
+    function closeDataModal() {
+      document.getElementById('data-modal').classList.add('hidden');
+    }
+
+    function switchDataType(type) {
+      currentDataType = type;
+      updateDataModalView();
+    }
+
+    function updateDataModalView() {
+      const textarea = document.getElementById('data-textarea');
+      const label = document.getElementById('data-label-text');
+      const pgnBtn = document.getElementById('tab-pgn-btn');
+      const fenBtn = document.getElementById('tab-fen-btn');
+
+      if (currentDataType === 'pgn') {
+        // PGNタブが選ばれている場合、現在の対局の全棋譜を出力
+        textarea.value = generatePGN();
+        label.textContent = 'PGNデータ（棋譜）';
+        pgnBtn.className = 'flex-1 py-1.5 rounded-lg transition bg-white text-slate-800 shadow-sm';
+        fenBtn.className = 'flex-1 py-1.5 rounded-lg transition text-slate-500 hover:text-slate-800';
+      } else {
+        // FENタブが選ばれている場合、現在の盤面のFEN文字列を出力
+        textarea.value = boardToFEN();
+        label.textContent = 'FENデータ（現在の局面）';
+        fenBtn.className = 'flex-1 py-1.5 rounded-lg transition bg-white text-slate-800 shadow-sm';
+        pgnBtn.className = 'flex-1 py-1.5 rounded-lg transition text-slate-500 hover:text-slate-800';
+      }
     }
     function closeDataModal() { document.getElementById('data-modal').classList.add('hidden'); }
 
@@ -3518,7 +3670,7 @@ function updateAiThinkingUI() {
       const textarea = document.getElementById('data-textarea');
       try {
         await navigator.clipboard.writeText(textarea.value);
-        showCustomAlert('PGNデータをクリップボードにコピーしました！');
+        showCustomAlert('データをクリップボードにコピーしました！');
       } catch (err) {
         showCustomAlert('コピーに失敗しました。');
       }
@@ -3539,13 +3691,19 @@ function updateAiThinkingUI() {
             let matchedMove = null;
 
             // 1. キャスリングの判定
-            if (san === 'O-O' || san === '0-0') {
-              matchedMove = legalMoves.find(m => m.isCastling && m.to.c === 6);
-            } else if (san === 'O-O-O' || san === '0-0-0') {
-              matchedMove = legalMoves.find(m => m.isCastling && m.to.c === 2);
+            if (san === 'O-O' || san === '0-0' || san === '0-0-0' || san === 'O-O-O') {
+              const isKingside = (san === 'O-O' || san === '0-0');
+              matchedMove = legalMoves.find(m => m.isCastling && (isKingside ? m.to.c === 6 : m.to.c === 2));
             } else {
-              // 2. 通常の手の判定（末尾の2文字から移動先マスを特定）
-              // 例: "Nf3" なら "f3", "exd5" なら "d5"
+              // 2. プロモーション（=Q または 末尾のQ, R, B, N）の抽出
+              let promoChoice = null;
+              const promoMatch = san.match(/=([QRBN])/) || san.match(/([QRBN])$/);
+              if (promoMatch && ['Q','R','B','N'].includes(promoMatch[1]) && san.length > 2) {
+                promoChoice = promoMatch[1].toLowerCase();
+                san = san.replace(/=[QRBN]/, '').replace(/[QRBN]$/, '');
+              }
+
+              // 3. 通常の手の解析（末尾2文字が移動先マス）
               const destStr = san.slice(-2); 
               const files = ['a','b','c','d','e','f','g','h'];
               const ranks = ['8','7','6','5','4','3','2','1'];
@@ -3553,14 +3711,14 @@ function updateAiThinkingUI() {
               const targetC = files.indexOf(destStr[0]);
               const targetR = ranks.indexOf(destStr[1]);
 
-              // 先頭の文字から駒の種類を特定（大文字がなければポーン 'p'）
+              // 先頭の文字から駒の種類を特定
               let pieceType = 'p';
               const firstChar = san[0];
               if (['N', 'B', 'R', 'Q', 'K'].includes(firstChar)) {
                 pieceType = firstChar.toLowerCase();
               }
 
-              // 合法手の中から「移動先」と「駒の種類」が一致するものを探す
+              // 合法手の中から条件に合うものを絞り込む
               const candidates = legalMoves.filter(m => {
                 const piece = board[m.from.r][m.from.c];
                 return m.to.r === targetR && m.to.c === targetC && piece.t === pieceType;
@@ -3569,35 +3727,32 @@ function updateAiThinkingUI() {
               if (candidates.length === 1) {
                 matchedMove = candidates[0];
               } else if (candidates.length > 1) {
-                // 同じ種類の駒が同じマスに動ける場合（例: Nbd7 など）の曖昧さ回避
+                // 曖昧さ回避（例: Nbd7 や exd5 の場合の移動元ファイル/ランクの特定）
                 let disambigChar = '';
-
                 if (pieceType === 'p' && san.includes('x')) {
-                  // ポーンの取りは先頭文字が移動元ファイル
-                  disambigChar = san[0];
-                } else if (pieceType !== 'p') {
-                  // ナイトやルークなどは駒の種類の次の文字
-                  disambigChar = san[1] || '';
+                  disambigChar = san[0]; // exd5 なら 'e'
+                } else if (pieceType !== 'p' && san.length >= 3) {
+                  disambigChar = san[1];
                 }
 
                 matchedMove = candidates.find(m => {
                   const fromFile = files[m.from.c];
                   const fromRank = ranks[m.from.r];
-
-                  return (
-                    fromFile === disambigChar ||
-                    fromRank === disambigChar
-                  );
+                  return fromFile === disambigChar || fromRank === disambigChar;
                 });
+              }
+
+              if (matchedMove && !promoChoice && matchedMove.isPromotion) {
+                promoChoice = 'q'; // デフォルトでクイーン昇格
+              }
+
+              if (matchedMove) {
+                executeMove(matchedMove, promoChoice, true);
+                continue;
               }
             }
 
-            if (matchedMove) {
-              // プロモーション（昇格）がある場合の処理
-              const promoMatch = san.match(/=([QRBN])/);
-              const promoChoice = promoMatch ? promoMatch[1].toLowerCase() : (matchedMove.isPromotion ? 'q' : null);
-              executeMove(matchedMove, promoChoice, true);
-            } else {
+            if (!matchedMove) {
               const moveNum = Math.floor(i / 2) + 1;
               const colorName = (i % 2 === 0) ? '白' : '黒';
               showCustomAlert(`ロード中断: 第${moveNum}手（${colorName}）の "${sanList[i]}" が現在の盤面で見つかりませんでした。`);
