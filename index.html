@@ -146,6 +146,17 @@
     body.dark-mode ::-webkit-scrollbar-thumb {
       background: #475569;
     }
+    /* エディタで選択中のパレットボタンのスタイル */
+    .editor-brush-btn.selected-brush {
+      border-color: #6366f1 !important;
+      border-width: 2px !important;
+      background-color: #e0e7ff !important;
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+    }
+    body.dark-mode .editor-brush-btn.selected-brush {
+      background-color: #312e81 !important;
+      border-color: #818cf8 !important;
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col antialiased transition-colors duration-200">
@@ -303,49 +314,74 @@
         </button>
       </div>
       <!-- ▼ 盤面エディタ用コントロールパネル（普段は非表示） -->
+      <!-- ▼ 盤面エディタ用コントロールパネル -->
       <div id="editor-panel" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3 w-full max-w-[560px]">
         <div class="flex items-center justify-between pb-2 border-b border-slate-100">
           <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
             <i class="fa-solid fa-chess-board text-indigo-500"></i>
             <span>盤面エディタモード</span>
           </h3>
-          <button onclick="exitEditorMode()" class="px-2.5 py-1 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition">
+          <button onclick="validateAndExitEditor()" class="px-2.5 py-1 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition hover:bg-indigo-700">
             エディタ終了・対局へ
           </button>
         </div>
 
-        <p class="text-xs text-slate-500">配置したい駒を選んでから、盤面のマスをクリックしてください。</p>
+        <p class="text-xs text-slate-500">配置したい駒を選んでマスをクリック。手番や権利も設定できます。</p>
+
+        <!-- ▼ 【追加】手番とキャスリング権の設定エリア -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+          <!-- 手番選択 -->
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-700">手番:</span>
+            <div class="flex gap-1">
+              <button id="editor-turn-w" onclick="setEditorTurn('w')" class="px-2.5 py-1 rounded-lg font-semibold border transition">白番</button>
+              <button id="editor-turn-b" onclick="setEditorTurn('b')" class="px-2.5 py-1 rounded-lg font-semibold border transition">黒番</button>
+            </div>
+          </div>
+
+          <!-- キャスリング権 -->
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-slate-700">キャスリング:</span>
+            <div class="flex gap-1 text-[11px]">
+              <label class="cursor-pointer flex items-center gap-0.5"><input type="checkbox" id="edit-cw-k" class="rounded">白K</label>
+              <label class="cursor-pointer flex items-center gap-0.5"><input type="checkbox" id="edit-cw-q" class="rounded">白Q</label>
+              <label class="cursor-pointer flex items-center gap-0.5"><input type="checkbox" id="edit-cb-k" class="rounded">黒k</label>
+              <label class="cursor-pointer flex items-center gap-0.5"><input type="checkbox" id="edit-cb-q" class="rounded">黒q</label>
+            </div>
+          </div>
+        </div>
 
         <!-- 白駒パレット -->
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-xs font-bold text-slate-600 w-12">白側:</span>
-          <button onclick="selectEditorBrush('w', 'k')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♔</button>
-          <button onclick="selectEditorBrush('w', 'q')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♕</button>
-          <button onclick="selectEditorBrush('w', 'r')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♖</button>
-          <button onclick="selectEditorBrush('w', 'b')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♗</button>
-          <button onclick="selectEditorBrush('w', 'n')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♘</button>
-          <button onclick="selectEditorBrush('w', 'p')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♙</button>
+          <button onclick="selectEditorBrush('w', 'k', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♔</button>
+          <button onclick="selectEditorBrush('w', 'q', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♕</button>
+          <button onclick="selectEditorBrush('w', 'r', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♖</button>
+          <button onclick="selectEditorBrush('w', 'b', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♗</button>
+          <button onclick="selectEditorBrush('w', 'n', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♘</button>
+          <button onclick="selectEditorBrush('w', 'p', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♙</button>
         </div>
 
         <!-- 黒駒パレット ＆ 消去・クリア -->
         <div class="flex items-center gap-1.5 flex-wrap">
           <span class="text-xs font-bold text-slate-600 w-12">黒側:</span>
-          <button onclick="selectEditorBrush('b', 'k')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♚</button>
-          <button onclick="selectEditorBrush('b', 'q')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♛</button>
-          <button onclick="selectEditorBrush('b', 'r')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♜</button>
-          <button onclick="selectEditorBrush('b', 'b')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♝</button>
-          <button onclick="selectEditorBrush('b', 'n')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♞</button>
-          <button onclick="selectEditorBrush('b', 'p')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♟</button>
+          <button onclick="selectEditorBrush('b', 'k', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♚</button>
+          <button onclick="selectEditorBrush('b', 'q', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♛</button>
+          <button onclick="selectEditorBrush('b', 'r', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♜</button>
+          <button onclick="selectEditorBrush('b', 'b', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♝</button>
+          <button onclick="selectEditorBrush('b', 'n', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♞</button>
+          <button onclick="selectEditorBrush('b', 'p', this)" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♟</button>
           
           <div class="h-6 w-px bg-slate-200 mx-1"></div>
           
-          <button onclick="selectEditorBrush(null, null)" class="editor-brush-btn px-3 py-1.5 text-xs font-semibold rounded-lg border bg-rose-50 text-rose-700 hover:bg-rose-100">
+          <button onclick="selectEditorBrush(null, null, this)" class="editor-brush-btn px-3 py-1.5 text-xs font-semibold rounded-lg border bg-rose-50 text-rose-700 hover:bg-rose-100">
             <i class="fa-solid fa-eraser mr-1"></i>消去
           </button>
           <button onclick="clearEditorBoard()" class="px-3 py-1.5 text-xs font-semibold rounded-lg border bg-slate-100 hover:bg-slate-200 text-slate-700">
             全消し
           </button>
         </div>
+      </div>
       </div>
     </section>
 
@@ -1016,6 +1052,20 @@
       }
     }
 
+    // 【修正後】Stockfishからのメッセージを処理する関数
+    function handleStockfishMessage(line) {
+      const statusEl = document.getElementById('sf-engine-status');
+      if (line.includes('uciok')) {
+        isStockfishReady = true;
+        if (statusEl) statusEl.textContent = 'Stockfish 準備完了';
+      } else if (line.startsWith('bestmove')) {
+        const parts = line.split(' ');
+        if (parts.length >= 2) {
+          onStockfishBestMove(parts[1]);
+        }
+      }
+    }
+
     function handleTimeout(loserColor) {
       stopTimer();
       stopAiThinking();
@@ -1078,9 +1128,18 @@
     }
 
     // 筆（置く駒）の選択
-    function selectEditorBrush(color, type) {
+    function selectEditorBrush(color, type, btnElement) {
       editorBrush = color ? { color, type } : null;
-      showCustomAlert(color ? `「${color === 'w' ? '白' : '黒'}の${type.toUpperCase()}」を選択しました` : '消しゴムを選択しました');
+
+      // すべてのパレットボタンから選択状態のクラスを外す
+      document.querySelectorAll('.editor-brush-btn').forEach(btn => {
+        btn.classList.remove('selected-brush');
+      });
+
+      // クリックされたボタンに選択状態のクラスを付与する
+      if (btnElement) {
+        btnElement.classList.add('selected-brush');
+      }
     }
 
     // 盤面をすべて空にする
@@ -1091,6 +1150,97 @@
         }
       }
       updateBoardDOM();
+    }
+
+    // エディタ内での一時手番保持用
+    let editorTurn = 'w';
+
+    function setEditorTurn(c) {
+      editorTurn = c;
+      updateEditorUIState();
+    }
+
+    function updateEditorUIState() {
+      const btnW = document.getElementById('editor-turn-w');
+      const btnB = document.getElementById('editor-turn-b');
+      const activeStyle = 'bg-indigo-600 text-white border-indigo-600 shadow-sm';
+      const inactiveStyle = 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100';
+
+      if (btnW && btnB) {
+        btnW.className = `px-2.5 py-1 rounded-lg font-semibold border transition ${editorTurn === 'w' ? activeStyle : inactiveStyle}`;
+        btnB.className = `px-2.5 py-1 rounded-lg font-semibold border transition ${editorTurn === 'b' ? activeStyle : inactiveStyle}`;
+      }
+    }
+
+    // エディタを開くときに現在の状態を反映
+    const originalOpenEditorMode = openEditorMode;
+    openEditorMode = function() {
+      editorTurn = turn;
+      document.getElementById('edit-cw-k').checked = castlingRights.wK;
+      document.getElementById('edit-cw-q').checked = castlingRights.wQ;
+      document.getElementById('edit-cb-k').checked = castlingRights.bK;
+      document.getElementById('edit-cb-q').checked = castlingRights.bQ;
+      updateEditorUIState();
+      originalOpenEditorMode();
+    };
+
+    // 終了時のバリデーション ＆ 適用
+    function validateAndExitEditor() {
+      let whiteKings = 0;
+      let blackKings = 0;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const p = board[r][c];
+          if (p && p.t === 'k') {
+            if (p.c === 'w') whiteKings++;
+            if (p.c === 'b') blackKings++;
+          }
+        }
+      }
+
+      if (whiteKings !== 1 || blackKings !== 1) {
+        showCustomAlert('エラー: 白と黒のキングはそれぞれちょうど1枚ずつ配置してください。');
+        return;
+      }
+
+      // 編集内容をグローバル変数に反映
+      turn = editorTurn;
+      castlingRights = {
+        wK: document.getElementById('edit-cw-k').checked,
+        wQ: document.getElementById('edit-cw-q').checked,
+        bK: document.getElementById('edit-cb-k').checked,
+        bQ: document.getElementById('edit-cb-q').checked
+      };
+      enPassantTarget = null; // エディタからの場合は安全のため一旦リセット
+
+      // 相手のキングが王手されていないかのチェック
+      const opponentColor = turn === 'w' ? 'b' : 'w';
+      if (isInCheck(board, opponentColor)) {
+        showCustomAlert('エラー: 相手のキングがすでに王手（チェック）されている状態では手番を開始できません。');
+        return;
+      }
+
+      // エディタを正常終了して対局へ
+      exitEditorModeCustom();
+    }
+
+    function exitEditorModeCustom() {
+      isEditorMode = false;
+      document.getElementById('editor-panel').classList.add('hidden');
+      document.getElementById('status-bar').classList.remove('hidden');
+
+      moveHistory = [];
+      positionHistory = {};
+      recordPosition();
+      updateBoardDOM();
+      renderHistoryTable();
+      saveGameState();
+      showCustomAlert('カスタム局面を適用しました！この状態から対局を始められます。');
+
+      if (aiEnabled && !isGameOver && turn !== playerColor) {
+        setTimeout(() => triggerAiMoveIfNeeded(), 250);
+      }
     }
 
     // 現在の盤面からFEN文字列を生成
@@ -3809,10 +3959,15 @@ function updateAiThinkingUI() {
             let matchedMove = null;
 
             // 1. キャスリングの判定
-            if (san === 'O-O' || san === '0-0' || san === '0-0-0' || san === 'O-O-O') {
-              const isKingside = (san === 'O-O' || san === '0-0');
-              matchedMove = legalMoves.find(m => m.isCastling && (isKingside ? m.to.c === 6 : m.to.c === 2));
-            } else {
+            // 【修正後】キャスリングの判定と実行
+              if (san === 'O-O' || san === '0-0' || san === '0-0-0' || san === 'O-O-O') {
+                const isKingside = (san === 'O-O' || san === '0-0');
+                matchedMove = legalMoves.find(m => m.isCastling && (isKingside ? m.to.c === 6 : m.to.c === 2));
+                if (matchedMove) {
+                  executeMove(matchedMove, null, true);
+                  continue; // 次の手に進む
+                }
+              } else {
               // 2. プロモーション（=Q または 末尾のQ, R, B, N）の抽出
               let promoChoice = null;
               const promoMatch = san.match(/=([QRBN])/) || san.match(/([QRBN])$/);
