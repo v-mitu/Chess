@@ -302,6 +302,51 @@
           <span>戻る</span>
         </button>
       </div>
+      <!-- ▼ 盤面エディタ用コントロールパネル（普段は非表示） -->
+      <div id="editor-panel" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3 w-full max-w-[560px]">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+            <i class="fa-solid fa-chess-board text-indigo-500"></i>
+            <span>盤面エディタモード</span>
+          </h3>
+          <button onclick="exitEditorMode()" class="px-2.5 py-1 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition">
+            エディタ終了・対局へ
+          </button>
+        </div>
+
+        <p class="text-xs text-slate-500">配置したい駒を選んでから、盤面のマスをクリックしてください。</p>
+
+        <!-- 白駒パレット -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold text-slate-600 w-12">白側:</span>
+          <button onclick="selectEditorBrush('w', 'k')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♔</button>
+          <button onclick="selectEditorBrush('w', 'q')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♕</button>
+          <button onclick="selectEditorBrush('w', 'r')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♖</button>
+          <button onclick="selectEditorBrush('w', 'b')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♗</button>
+          <button onclick="selectEditorBrush('w', 'n')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♘</button>
+          <button onclick="selectEditorBrush('w', 'p')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♙</button>
+        </div>
+
+        <!-- 黒駒パレット ＆ 消去・クリア -->
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <span class="text-xs font-bold text-slate-600 w-12">黒側:</span>
+          <button onclick="selectEditorBrush('b', 'k')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♚</button>
+          <button onclick="selectEditorBrush('b', 'q')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♛</button>
+          <button onclick="selectEditorBrush('b', 'r')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♜</button>
+          <button onclick="selectEditorBrush('b', 'b')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♝</button>
+          <button onclick="selectEditorBrush('b', 'n')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♞</button>
+          <button onclick="selectEditorBrush('b', 'p')" class="editor-brush-btn p-2 text-xl rounded-lg border hover:bg-slate-100">♟</button>
+          
+          <div class="h-6 w-px bg-slate-200 mx-1"></div>
+          
+          <button onclick="selectEditorBrush(null, null)" class="editor-brush-btn px-3 py-1.5 text-xs font-semibold rounded-lg border bg-rose-50 text-rose-700 hover:bg-rose-100">
+            <i class="fa-solid fa-eraser mr-1"></i>消去
+          </button>
+          <button onclick="clearEditorBoard()" class="px-3 py-1.5 text-xs font-semibold rounded-lg border bg-slate-100 hover:bg-slate-200 text-slate-700">
+            全消し
+          </button>
+        </div>
+      </div>
     </section>
 
     <!-- 右側：棋譜パネル ＆ リプレイコントローラー -->
@@ -521,6 +566,11 @@
         <button onclick="closeToolsModal(); openRuleModal();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
           <i class="fa-solid fa-circle-info w-5 text-center text-slate-500"></i>
           <span>ルールと操作説明</span>
+        </button>
+
+        <button onclick="closeToolsModal(); openEditorMode();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
+          <i class="fa-solid fa-chess-board w-5 text-center text-slate-500"></i>
+          <span>盤面エディタを開く</span>
         </button>
 
         <!-- 座標表示切り替えボタン -->
@@ -990,6 +1040,57 @@
       updateScoreboardDOM();
       saveGameState();
       enableReplayControls();
+    }
+
+    // --- 盤面エディタ用変数 ---
+    let isEditorMode = false;
+    let editorBrush = { color: 'w', type: 'q' }; // 選択中の駒（nullなら消しゴム）
+
+    // エディタモードの開始
+    function openEditorMode() {
+      isEditorMode = true;
+      selectedSquare = null;
+      validMoves = [];
+      stopTimer();
+      stopAiThinking();
+
+      // パレットを表示し、通常コントロールを隠す
+      document.getElementById('editor-panel').classList.remove('hidden');
+      document.getElementById('status-bar').classList.add('hidden');
+      
+      updateBoardDOM();
+    }
+
+    // エディタモードの終了
+    function exitEditorMode() {
+      isEditorMode = false;
+      document.getElementById('editor-panel').classList.add('hidden');
+      document.getElementById('status-bar').classList.remove('hidden');
+
+      // 履歴や位置情報をリフレッシュ
+      moveHistory = [];
+      positionHistory = {};
+      recordPosition();
+      updateBoardDOM();
+      renderHistoryTable();
+      saveGameState();
+      showCustomAlert('エディタを終了しました。この局面から対局を始められます！');
+    }
+
+    // 筆（置く駒）の選択
+    function selectEditorBrush(color, type) {
+      editorBrush = color ? { color, type } : null;
+      showCustomAlert(color ? `「${color === 'w' ? '白' : '黒'}の${type.toUpperCase()}」を選択しました` : '消しゴムを選択しました');
+    }
+
+    // 盤面をすべて空にする
+    function clearEditorBoard() {
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          board[r][c] = null;
+        }
+      }
+      updateBoardDOM();
     }
 
     // 現在の盤面からFEN文字列を生成
@@ -2038,6 +2139,13 @@ function updateAiThinkingUI() {
     }
 
     function onSquareClickByIndex(idx) {
+      // ▼ エディタモード中のときはガードを無視してクリック処理へ通す
+      if (isEditorMode) {
+        const dom = squareDOMCache[idx];
+        onSquareClick(dom.r, dom.c);
+        return;
+      }
+
       if (isAnimating || isPromoting || isGameOver || isAiThinking) return;
       if (replayIndex >= 0) return;
 
@@ -2046,6 +2154,16 @@ function updateAiThinkingUI() {
     }
 
     function onSquareClick(r, c) {
+
+      if (isEditorMode) {
+        if (editorBrush) {
+          board[r][c] = { t: editorBrush.type, c: editorBrush.color };
+        } else {
+          board[r][c] = null; // 消しゴム
+        }
+        updateBoardDOM();
+        return;
+      }
       if (isAnimating || isPromoting || isGameOver || isAiThinking || replayIndex >= 0) return;
       // AI対戦中は人間の手番以外操作不可
       if (aiEnabled && turn !== playerColor) return;
