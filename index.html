@@ -619,9 +619,12 @@
         </button>
 
         <!-- 全画面切り替えボタン -->
-        <button onclick="closeToolsModal(); toggleFullscreen();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center gap-3">
-          <i class="fa-solid fa-expand w-5 text-center text-slate-500"></i>
-          <span id="tools-fullscreen-text">全画面表示</span>
+        <button onclick="toggleFullscreen();" class="w-full py-2.5 px-4 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm text-left transition border border-slate-200 flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <i id="tools-fullscreen-icon" class="fa-solid fa-expand w-5 text-center text-slate-500"></i>
+            <span>全画面表示</span>
+          </div>
+          <span id="tools-fullscreen-status" class="text-xs font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md">OFF</span>
         </button>
       </div>
 
@@ -652,10 +655,10 @@
         <button onclick="setTimerPreset(1800)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">30分 (ラピッド)</button>
         <button onclick="setTimerPreset(3600)" class="py-2.5 px-8 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">60分 (スタンダード)</button>
         <button onclick="setTimerPreset(5400)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">90分 (クラシカル)</button>
-        <button onclick="setTimerPreset(0)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">タイマー無効</button>
-      
         <button onclick="setTimerPreset(300, 3, 'fisher')" class="py-2 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-xs transition border border-slate-200">5分 + 3秒 (フィッシャー)</button>
         <button onclick="setTimerPreset(300, 5, 'delay')" class="py-2 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-xs transition border border-slate-200">5分 / 5秒ディレイ</button>
+        <button onclick="setTimerPreset(0)" class="py-2.5 px-3 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 rounded-xl font-semibold text-sm transition border border-slate-200">タイマー無効</button>
+      
       </div>
 
       <button onclick="closeTimerModal()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-xl text-sm transition">
@@ -1035,6 +1038,7 @@
       document.getElementById('tools-modal').classList.add('hidden');
     }
 
+    // 【修正後】ツールモーダル内のON/OFF表示を更新する関数
     function updateToolsModalState() {
       // 座標ボタンのON/OFF状態テキストを更新
       const coordStatus = document.getElementById('tools-coord-status');
@@ -1045,12 +1049,29 @@
           : 'text-xs font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md';
       }
 
-      // 全画面状態に応じてテキストを切り替え
-      const fsText = document.getElementById('tools-fullscreen-text');
-      if (fsText) {
-        fsText.textContent = document.fullscreenElement ? '全画面解除' : '全画面表示';
+      // 全画面状態に応じてON/OFFバッジとアイコンを切り替え
+      const isFullscreen = !!document.fullscreenElement;
+      const fsStatus = document.getElementById('tools-fullscreen-status');
+      const fsIcon = document.getElementById('tools-fullscreen-icon');
+      
+      if (fsStatus) {
+        fsStatus.textContent = isFullscreen ? 'ON' : 'OFF';
+        fsStatus.className = isFullscreen
+          ? 'text-xs font-bold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-md'
+          : 'text-xs font-bold px-2 py-0.5 bg-slate-200 text-slate-700 rounded-md';
+      }
+      if (fsIcon) {
+        fsIcon.className = isFullscreen
+          ? 'fa-solid fa-compress w-5 text-center text-indigo-500'
+          : 'fa-solid fa-expand w-5 text-center text-slate-500';
       }
     }
+
+    // 【修正後】全画面切り替え検知イベント（既存の document.addEventListener('fullscreenchange', ...) と置き換え）
+    document.addEventListener('fullscreenchange', () => {
+      updateToolsModalState();
+      setTimeout(updateBoardDOM, 100);
+    });
 
     // 【修正後】Stockfishからのメッセージを処理する関数
     function handleStockfishMessage(line) {
